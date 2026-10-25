@@ -1,0 +1,285 @@
+/* =====================================================================
+   Dreamtify — reset, tipografi, tata letak, header/footer publik
+   ===================================================================== */
+
+/* --- Reset ringan --- */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-page);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img, svg, video { display: block; max-width: 100%; }
+img { height: auto; }
+input, button, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+p, h1, h2, h3, h4 { overflow-wrap: break-word; }
+[x-cloak] { display: none !important; }
+html.no-scroll { overflow: hidden; }
+[hidden] { display: none !important; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- Tipografi --- */
+h1, h2, h3, h4, .display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.005em;
+  color: var(--navy-900);
+}
+h1 { font-size: var(--fs-h1); font-weight: 700; }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
+h4 { font-size: 1.0625rem; }
+p + p { margin-top: var(--sp-3); }
+a { color: var(--link); text-underline-offset: 3px; }
+a:hover { color: var(--navy-700); }
+small, .text-small { font-size: var(--fs-small); }
+.text-xs { font-size: var(--fs-xs); }
+.text-muted { color: var(--text-muted); }
+.text-center { text-align: center; }
+.text-pink { color: var(--pink-600); }
+.fw-bold { font-weight: 800; }
+.num, .money, .code {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.code { font-weight: 800; letter-spacing: 0.04em; }
+.title-logo {
+  color: var(--navy-900);
+  text-shadow: 0 3px 0 var(--cloud-200);
+}
+.eyebrow {
+  font-size: var(--fs-small);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sky-600);
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; left: var(--sp-4); top: -100px; z-index: 100;
+  background: var(--navy-900); color: var(--white);
+  padding: var(--sp-2) var(--sp-4); border-radius: var(--r-btn);
+}
+.skip-link:focus { top: var(--sp-2); color: var(--white); }
+
+/* --- Ikon --- */
+.icon {
+  width: 1.25em; height: 1.25em;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: -0.25em;
+}
+.icon-lg { width: 1.6em; height: 1.6em; }
+
+/* --- Tata letak --- */
+.container {
+  width: 100%;
+  max-width: calc(var(--content-max) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.container-narrow { max-width: calc(720px + var(--gutter) * 2); }
+.section { padding-block: var(--sp-10); }
+.section-tint { background: var(--bg-section); }
+@media (min-width: 1024px) { .section { padding-block: var(--sp-16); } }
+
+.stack > * + * { margin-top: var(--stack-gap, var(--sp-4)); }
+.stack-sm { --stack-gap: var(--sp-2); }
+.stack-lg { --stack-gap: var(--sp-8); }
+.cluster {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--cluster-gap, var(--sp-3));
+}
+.cluster-between { justify-content: space-between; }
+.grid {
+  display: grid;
+  gap: var(--grid-gap, var(--sp-4));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--grid-min, 260px)), 1fr));
+}
+.grid-2 { display: grid; gap: var(--sp-4); }
+@media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+.mt-0 { margin-top: 0 !important; }
+.mt-2 { margin-top: var(--sp-2); }
+.mt-4 { margin-top: var(--sp-4); }
+.mt-6 { margin-top: var(--sp-6); }
+.mt-8 { margin-top: var(--sp-8); }
+.mb-4 { margin-bottom: var(--sp-4); }
+.w-full { width: 100%; }
+main { flex: 1 0 auto; }
+
+/* =====================================================================
+   Header publik
+   ===================================================================== */
+.site-header {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(245, 251, 255, 0.92);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.site-header__inner {
+  height: var(--header-h);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-4);
+}
+.brand { display: inline-flex; align-items: center; flex-shrink: 0; }
+.brand img { height: 48px; width: auto; }
+@media (min-width: 1024px) { .brand img { height: 60px; } }
+
+.site-nav { display: none; }
+.site-nav a {
+  display: inline-flex; align-items: center;
+  min-height: var(--tap-min);
+  padding-inline: var(--sp-3);
+  border-radius: var(--r-btn);
+  color: var(--navy-900);
+  font-weight: 700;
+  text-decoration: none;
+}
+.site-nav a:hover { background: var(--cloud-100); }
+.site-nav a[aria-current="page"] { background: var(--cloud-200); }
+.site-header__actions { display: flex; align-items: center; gap: var(--sp-2); }
+.site-header__wa { display: none; }
+
+.menu-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--tap-min); height: var(--tap-min);
+  border: var(--border-sticker);
+  border-radius: var(--r-btn);
+  background: var(--white);
+  box-shadow: 2px 2px 0 var(--navy-900);
+  color: var(--navy-900);
+}
+
+@media (min-width: 1024px) {
+  .site-nav { display: flex; gap: var(--sp-1); }
+  .site-header__wa { display: inline-flex; }
+  .menu-toggle { display: none; }
+}
+
+/* --- Laci menu HP --- */
+.drawer-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(5, 42, 69, 0.4);
+}
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 51;
+  width: min(86vw, 340px);
+  background: var(--white);
+  border-left: var(--border-sticker);
+  display: flex; flex-direction: column;
+  padding: var(--sp-4);
+  overflow-y: auto;
+}
+.drawer__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
+.drawer__head img { height: 40px; width: auto; }
+.drawer nav { display: flex; flex-direction: column; gap: var(--sp-1); }
+.drawer nav a {
+  display: flex; align-items: center; gap: var(--sp-3);
+  min-height: 52px; padding-inline: var(--sp-3);
+  border-radius: var(--r-btn);
+  color: var(--navy-900); font-weight: 700; font-size: 1.0625rem;
+  text-decoration: none;
+}
+.drawer nav a:hover, .drawer nav a[aria-current="page"] { background: var(--cloud-100); }
+.drawer__foot { margin-top: auto; padding-top: var(--sp-6); }
+.drawer-enter { transition: transform var(--dur) var(--ease); }
+.drawer-enter-start, .drawer-leave-end { transform: translateX(100%); }
+.drawer-enter-end, .drawer-leave-start { transform: translateX(0); }
+.drawer-leave { transition: transform var(--dur-fast) ease-in; }
+.fade-enter, .fade-leave { transition: opacity var(--dur) ease; }
+.fade-enter-start, .fade-leave-end { opacity: 0; }
+.fade-enter-end, .fade-leave-start { opacity: 1; }
+
+/* =====================================================================
+   Footer publik + gelombang awan
+   ===================================================================== */
+.site-footer {
+  position: relative;
+  margin-top: var(--sp-16);
+  background: var(--cloud-200);
+  color: var(--navy-900);
+  padding-block: var(--sp-8) var(--sp-6);
+}
+.site-footer::before {
+  content: "";
+  position: absolute; left: 0; right: 0; top: -39px;
+  height: 40px;
+  background: url("../img/cloud-wave.svg") repeat-x bottom left / auto 40px;
+  pointer-events: none;
+}
+.site-footer__grid { display: grid; gap: var(--sp-6); }
+@media (min-width: 640px) { .site-footer__grid { grid-template-columns: 1.4fr 1fr 1fr; } }
+.site-footer h2 { font-size: 1.0625rem; margin-bottom: var(--sp-2); }
+.site-footer ul { list-style: none; padding: 0; }
+.site-footer li a {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  min-height: 36px;
+  color: var(--navy-900); text-decoration: none; font-weight: 600;
+}
+.site-footer li a:hover { text-decoration: underline; }
+.site-footer__brand img { height: 56px; width: auto; }
+.site-footer__copy {
+  margin-top: var(--sp-6); padding-top: var(--sp-4);
+  border-top: 1px solid rgba(5, 42, 69, 0.15);
+  font-size: var(--fs-small);
+  color: var(--navy-700);
+}
+
+/* =====================================================================
+   Hero & dekorasi awan
+   ===================================================================== */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding-block: var(--sp-12) var(--sp-16);
+  background: linear-gradient(180deg, var(--cloud-100) 0%, var(--cloud-50) 100%);
+}
+.hero__inner { position: relative; z-index: 1; }
+.cloud-deco {
+  position: absolute; z-index: 0;
+  width: 180px; height: auto;
+  opacity: 0.9;
+  pointer-events: none;
+}
+.cloud-deco--1 { top: 24px; left: -50px; width: 160px; }
+.cloud-deco--2 { top: 70px; right: -40px; width: 220px; opacity: 0.75; }
+.cloud-deco--3 { bottom: 10px; left: 30%; width: 120px; opacity: 0.6; }
+@media (prefers-reduced-motion: no-preference) {
+  .cloud-deco--1 { animation: drift 14s ease-in-out infinite alternate; }
+  .cloud-deco--2 { animation: drift 18s ease-in-out infinite alternate-reverse; }
+}
+@keyframes drift { from { transform: translateX(0); } to { transform: translateX(24px); } }
+
+/* --- Gerak dikurangi --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

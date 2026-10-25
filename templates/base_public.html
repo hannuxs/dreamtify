@@ -1,0 +1,96 @@
+{% load static ui %}<!doctype html>
+<html lang="id">
+<head>
+  {% include "components/_head.html" %}
+  <title>{% block title %}{{ brand.name }} — {{ brand.tagline }}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Jasa war &amp; jastip tiket konser. Kamu tinggal duduk manis, kami yang berjuang.{% endblock %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <a class="skip-link" href="#konten">Langsung ke konten</a>
+
+  {# ASUMSI: tautan menu memakai path tetap; diganti {% url %} saat halamannya dibangun (fase 04–11). #}
+  <div x-data="drawer" @keydown.escape.window="close">
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="/" aria-label="{{ brand.name }} — beranda">
+          <img src="{% static 'img/logo-dreamtify-crop.png' %}" alt="{{ brand.name }}" width="338" height="214">
+        </a>
+        <nav class="site-nav" aria-label="Menu utama">
+          <a href="/#event">Event</a>
+          <a href="/lacak/">Lacak Pesanan</a>
+          <a href="/testimoni/">Testimoni</a>
+          <a href="/faq/">FAQ</a>
+        </nav>
+        <div class="site-header__actions">
+          {% if brand.admin_whatsapp %}
+            <a class="btn btn--secondary btn--sm site-header__wa" href="https://wa.me/{{ brand.admin_whatsapp }}" target="_blank" rel="noopener">{% icon "chat" %}<span>Tanya admin</span></a>
+          {% endif %}
+          <button class="menu-toggle" type="button" @click="toggle" :aria-expanded="expanded" aria-controls="menu-laci" aria-label="Buka menu">{% icon "menu" %}</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="drawer-backdrop" x-show="open" x-cloak @click="close"
+         x-transition:enter="fade-enter" x-transition:enter-start="fade-enter-start" x-transition:enter-end="fade-enter-end"
+         x-transition:leave="fade-leave" x-transition:leave-start="fade-leave-start" x-transition:leave-end="fade-leave-end"></div>
+    <aside class="drawer" id="menu-laci" x-show="open" x-cloak aria-label="Menu"
+           x-transition:enter="drawer-enter" x-transition:enter-start="drawer-enter-start" x-transition:enter-end="drawer-enter-end"
+           x-transition:leave="drawer-leave" x-transition:leave-start="drawer-leave-start" x-transition:leave-end="drawer-leave-end">
+      <div class="drawer__head">
+        <img src="{% static 'img/logo-dreamtify-crop.png' %}" alt="{{ brand.name }}" width="338" height="214">
+        <button class="btn btn--ghost btn--icon" type="button" @click="close" aria-label="Tutup menu">{% icon "x" %}</button>
+      </div>
+      <nav aria-label="Menu utama (HP)">
+        <a href="/#event" @click="close">{% icon "ticket" %}Event</a>
+        <a href="/lacak/">{% icon "search" %}Lacak Pesanan</a>
+        <a href="/testimoni/">{% icon "star" %}Testimoni</a>
+        <a href="/faq/">{% icon "info" %}FAQ</a>
+      </nav>
+      <div class="drawer__foot">
+        {% if brand.admin_whatsapp %}
+          <a class="btn btn--primary btn--block" href="https://wa.me/{{ brand.admin_whatsapp }}" target="_blank" rel="noopener">{% icon "chat" %}<span>Tanya admin via WA</span></a>
+        {% endif %}
+      </div>
+    </aside>
+  </div>
+
+  <main id="konten">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="site-footer__grid">
+        <div class="site-footer__brand stack stack-sm">
+          <img src="{% static 'img/logo-dreamtify-crop.png' %}" alt="{{ brand.name }}" width="338" height="214" loading="lazy">
+          <p>Jasa war &amp; jastip tiket konser.<br>{{ brand.tagline }} ☁️</p>
+        </div>
+        <div>
+          <h2>Jelajahi</h2>
+          <ul>
+            <li><a href="/#event">Event</a></li>
+            <li><a href="/lacak/">Lacak pesanan</a></li>
+            <li><a href="/testimoni/">Testimoni</a></li>
+            <li><a href="/faq/">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Info</h2>
+          <ul>
+            <li><a href="/syarat/">Syarat &amp; ketentuan</a></li>
+            <li><a href="/privasi/">Kebijakan privasi</a></li>
+            {% if brand.admin_whatsapp %}<li><a href="https://wa.me/{{ brand.admin_whatsapp }}" target="_blank" rel="noopener">{% icon "chat" %}WhatsApp admin</a></li>{% endif %}
+            {% if brand.instagram %}<li><a href="https://instagram.com/{{ brand.instagram }}" target="_blank" rel="noopener">{% icon "instagram" %}@{{ brand.instagram }}</a></li>{% endif %}
+            {% if brand.contact_email %}<li><a href="mailto:{{ brand.contact_email }}">{% icon "mail" %}{{ brand.contact_email }}</a></li>{% endif %}
+          </ul>
+        </div>
+      </div>
+      <p class="site-footer__copy">© {% now "Y" %} {{ brand.name }}. Semua hak dilindungi.</p>
+    </div>
+  </footer>
+
+  {% include "components/toast_host.html" %}
+  {% block extra_body %}{% endblock %}
+</body>
+</html>

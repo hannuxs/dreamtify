@@ -1,0 +1,7 @@
+{% comment %}
+Stepper bernomor. Parameter: steps (list teks), current (nomor langkah aktif, mulai 1)
+{% endcomment %}<ol class="stepper">
+  {% for step in steps %}
+    <li{% if forloop.counter < current %} class="is-done"{% elif forloop.counter == current %} aria-current="step"{% endif %}>{{ step }}</li>
+  {% endfor %}
+</ol>

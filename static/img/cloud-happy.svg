@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" role="img" aria-label="Awan tersenyum">
+  <g fill="#94C6E6" transform="translate(5 7)">
+    <circle cx="62" cy="80" r="34"/><circle cx="102" cy="60" r="42"/><circle cx="144" cy="82" r="30"/>
+    <rect x="30" y="80" width="140" height="46" rx="23"/>
+  </g>
+  <g fill="#BCE2F5">
+    <circle cx="62" cy="80" r="34"/><circle cx="102" cy="60" r="42"/><circle cx="144" cy="82" r="30"/>
+    <rect x="30" y="80" width="140" height="46" rx="23"/>
+  </g>
+  <ellipse cx="88" cy="38" rx="13" ry="7" fill="#fff" opacity=".75" transform="rotate(-20 88 38)"/>
+  <ellipse cx="50" cy="66" rx="8" ry="5" fill="#fff" opacity=".7" transform="rotate(-30 50 66)"/>
+  <ellipse cx="138" cy="66" rx="7" ry="4" fill="#fff" opacity=".6" transform="rotate(-20 138 66)"/>
+  <g fill="none" stroke="#052A45" stroke-width="4.5" stroke-linecap="round">
+    <path d="M78 94q6-9 12 0"/><path d="M110 94q6-9 12 0"/>
+  </g>
+  <path d="M91 101h18q0 12-9 12t-9-12z" fill="#052A45"/>
+  <path d="M95 109q5-4 10 0q-2 3-5 3t-5-3z" fill="#F26877"/>
+  <ellipse cx="70" cy="106" rx="8" ry="5" fill="#F26877" opacity=".85"/>
+  <ellipse cx="130" cy="106" rx="8" ry="5" fill="#F26877" opacity=".85"/>
+</svg>

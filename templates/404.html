@@ -1,0 +1,22 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}Halaman tidak ditemukan — {{ brand.name }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/pages.css' %}"><meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <div class="container container-narrow error-page__inner">
+    <img class="error-page__mascot" src="{% static 'img/cloud-sad.svg' %}" alt="" width="200" height="150">
+    <p class="error-page__code" aria-hidden="true">404</p>
+    <h1>Yah, halamannya nggak ketemu</h1>
+    <p>Mungkin link-nya salah ketik atau halamannya sudah dipindah. Coba balik ke beranda ya, kak.</p>
+    <div class="cluster">
+      {% include "components/button.html" with label="Kembali ke beranda" href="/" icon="home" %}
+      {% if brand.admin_whatsapp %}
+        <a class="btn btn--secondary" href="https://wa.me/{{ brand.admin_whatsapp }}" target="_blank" rel="noopener">{% icon "chat" %}<span>Tanya admin</span></a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

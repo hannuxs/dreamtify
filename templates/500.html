@@ -1,0 +1,25 @@
+{% load static %}<!doctype html>
+{# Dirender tanpa context processor (Django server_error), jadi berdiri sendiri. #}
+<html lang="id">
+<head>
+  {% include "components/_head.html" %}
+  <link rel="stylesheet" href="{% static 'css/pages.css' %}">
+  <meta name="robots" content="noindex">
+  <title>Ada gangguan — Dreamtify</title>
+</head>
+<body>
+  <main>
+    <section class="error-page">
+      <div class="container container-narrow error-page__inner">
+        <img src="{% static 'img/logo-dreamtify-crop.png' %}" alt="Dreamtify" width="169" height="107">
+        <img class="error-page__mascot" src="{% static 'img/cloud-sad.svg' %}" alt="" width="200" height="150">
+        <p class="error-page__code" aria-hidden="true">500</p>
+        <h1>Maaf, ada gangguan di server kami</h1>
+        <p>Kesalahan ini sudah tercatat di sistem kami. Coba muat ulang beberapa saat lagi, ya kak.
+          Kalau mendesak, hubungi admin lewat WhatsApp atau Instagram Dreamtify.</p>
+        <a class="btn btn--primary" href="/"><span>Kembali ke beranda</span></a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

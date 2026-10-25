@@ -58,3 +58,16 @@ Tanda ⚠️ = paling perlu dicek pemilik bisnis.
 | C16 | Rekening tujuan transfer diatur di Pengaturan (bisa lebih dari satu). Seed awal memakai rekening di form lama (lihat `docs/referensi/`) | |
 | C17 | Database dev dan produksi terpisah: `dreamtify_dev` dan `dreamtify` | Aman saat uji coba |
 | C18 | HTTPS di luar cakupan aplikasi; dokumen deploy memberi opsi (Cloudflare Tunnel / reverse proxy IIS) | Port 8383 polos HTTP |
+
+## D. Keputusan tambahan (disetujui pemilik di fase 00, 26 Okt 2026)
+
+Pemilik: dokumen di `docs/` adalah **referensi, bukan patokan kaku** — pilih
+opsi yang masuk akal dan improvisasi seperlunya (catat `# ASUMSI:` + PROGRESS).
+
+| # | Keputusan | Dipakai di fase |
+|---|---|---|
+| D1 | `dev.bat` membuat database dev + user aplikasi sendiri bila belum ada (minta password root MariaDB sekali, tidak disimpan). Fungsi yang sama dipakai `install.bat` | 01, 13 |
+| D2 | Early booking ikut **hangus** saat `HANGUS` (mengikuti tabel `docs/02` §4.4 apa adanya), diperlakukan sebagai uang tanda slot. Default early booking = 0, jadi dampaknya kecil | 02 |
+| D3 | Batas bayar fee: (a) `order_close_at` tahap divalidasi ≤ `war_at − 2 jam`, form tertutup bila `fee_deadline` sudah lewat; (b) bukti ditolak → `fee_deadline` diperpanjang minimal 6 jam (tidak melewati `war_at − 2 jam`); (c) pembatalan otomatis `LEWAT_BATAS_FEE` hanya bila **tidak ada** Payment `DITERIMA` maupun `MENUNGGU` — selain itu hanya ditandai untuk admin | 02, 06 |
+| D4 | Undo hasil di Mode War: transisi internal `PENYELESAIAN`/`SELESAI` → `PROSES_WAR` diizinkan selama tahap masih `WAR` dan belum ada refund/penyerahan; notifikasi hasil yang belum terkirim dihapus/diganti; tercatat di audit | 02, 07 |
+| D5 | Kolom 16 "Bukti Transfer" berisi link hanya di ekspor admin. Di link promotor kolom itu berisi `Terverifikasi` (atau kosong bila belum), kecuali Owner mengaktifkan opsi khusus (default mati) | 10 |

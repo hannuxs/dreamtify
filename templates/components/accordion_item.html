@@ -1,0 +1,7 @@
+{% load ui %}{% comment %}
+Item accordion (native <details>, tanpa JS). Bungkus beberapa item dengan <div class="accordion">.
+Parameter: title, body, open (True → terbuka)
+{% endcomment %}<details class="accordion__item"{% if open %} open{% endif %}>
+  <summary><span>{{ title }}</span>{% icon "chevron-down" %}</summary>
+  <div class="accordion__body">{{ body|linebreaks }}</div>
+</details>

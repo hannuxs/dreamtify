@@ -1,0 +1,41 @@
+/* =====================================================================
+   Dreamtify — gaya khusus halaman publik (Segera hadir, error)
+   ===================================================================== */
+
+/* --- Segera hadir --- */
+.soon { padding-block: var(--sp-10) var(--sp-12); }
+.soon__inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-4); }
+.soon__logo { width: min(78vw, 360px); height: auto; }
+.soon h1 { max-width: 18ch; }
+.soon__lead { max-width: 52ch; color: var(--ink-600); font-size: 1.0625rem; }
+.soon__steps {
+  list-style: none; padding: 0;
+  display: grid; gap: var(--sp-4);
+  width: 100%;
+  margin-top: var(--sp-4);
+  text-align: left;
+}
+@media (min-width: 640px) { .soon__steps { grid-template-columns: repeat(3, 1fr); } }
+.soon__steps li { display: flex; flex-direction: column; gap: 4px; padding: var(--sp-4) var(--sp-5); }
+.soon__steps span:last-child { color: var(--ink-600); font-size: var(--fs-small); }
+.soon__num {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; margin-bottom: var(--sp-1);
+  border-radius: 50%;
+  background: var(--navy-900); color: var(--white);
+  font-family: var(--font-display); font-weight: 600;
+}
+.soon__mascot { width: 140px; margin-top: var(--sp-4); }
+
+/* --- Halaman error --- */
+.error-page { padding-block: var(--sp-12); }
+.error-page__inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-4); }
+.error-page__mascot { width: 200px; height: auto; }
+.error-page__code {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 4rem; line-height: 1;
+  color: var(--cloud-200);
+  -webkit-text-stroke: 2px var(--navy-900);
+  text-shadow: 4px 4px 0 var(--navy-900);
+}
+.error-page p { max-width: 44ch; color: var(--ink-600); }

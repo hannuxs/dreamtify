@@ -1,0 +1,4 @@
+{% load ui %}{% comment %}
+Hitung mundur. Parameter: target (datetime aware), prefix (default "War dalam"), done (teks saat lewat)
+Teks awal dari server (tetap terbaca tanpa JS), lalu diperbarui Alpine tiap detik.
+{% endcomment %}<span class="countdown" :class="stateClass" x-data="countdown" data-target="{{ target|date:'c' }}"{% if prefix %} data-prefix="{{ prefix }}"{% endif %}{% if done %} data-done="{{ done }}"{% endif %}>{% icon "clock" %}<span x-text="label">{{ prefix|default:"War" }} {{ target|date:"D, j M Y H.i" }} WIB</span></span>

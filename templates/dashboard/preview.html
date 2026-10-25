@@ -1,0 +1,36 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Pratinjau kerangka{% endblock %}
+{% block page_title %}Beranda tugas{% endblock %}
+
+{% block content %}
+<div class="stack stack-lg">
+  <div class="alert alert--info">Pratinjau kerangka dashboard (hanya mode dev). Isi sebenarnya dibangun mulai fase 03.</div>
+
+  <section class="stack">
+    <h2>Tugas sekarang</h2>
+    <div class="stat-grid">
+      <a class="stat" href="#"><span class="stat__value">0</span><span class="stat__label">Bukti menunggu verifikasi</span></a>
+      <a class="stat" href="#"><span class="stat__value">0</span><span class="stat__label">Lewat batas pelunasan</span></a>
+      <a class="stat" href="#"><span class="stat__value">0</span><span class="stat__label">Waiting list</span></a>
+      <a class="stat" href="#"><span class="stat__value">0</span><span class="stat__label">Refund siap diproses</span></a>
+      <a class="stat" href="#"><span class="stat__value">0</span><span class="stat__label">Kabar belum dikirim</span></a>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="cluster cluster-between">
+      <div>
+        <p class="eyebrow">Contoh Fanmeet · Presale</p>
+        <h3>War sedang berlangsung</h3>
+      </div>
+      <span class="badge badge--live">Live</span>
+    </div>
+    <div class="cluster mt-4">
+      <button class="btn btn--primary" type="button">Buka Mode War</button>
+      <button class="btn btn--secondary" type="button">Pesanan</button>
+      <button class="btn btn--ghost" type="button">Ekspor promotor</button>
+    </div>
+  </section>
+</div>
+{% endblock %}

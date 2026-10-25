@@ -1,0 +1,136 @@
+/* =====================================================================
+   Dreamtify — design tokens (docs/06). Tema terang saja.
+   ===================================================================== */
+
+/* Font self-host (SIL OFL, lihat static/fonts/OFL-*.txt). Variable font:
+   satu file untuk semua ketebalan. */
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("../fonts/fredoka-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("../fonts/fredoka-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("../fonts/nunito-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("../fonts/nunito-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  /* --- Warna brand (dari logo) --- */
+  --navy-900: #052A45;
+  --navy-700: #17476B;
+  --sky-600: #3E7FB0;
+  --sky-400: #88B5D6;
+  --cloud-200: #BCE2F5;
+  --cloud-100: #E4F3FC;
+  --cloud-50: #F5FBFF;
+  --white: #FFFFFF;
+  --pink-400: #F26877;
+  --pink-600: #C23A4B;
+  --pink-100: #FDE4E7;
+  --sun-400: #F5B83D;
+  --ink-600: #4A6175;
+  --line: #D3E6F2;
+
+  /* --- Warna status --- */
+  --success: #1E8E5A;
+  --success-bg: #E3F6EC;
+  --warning: #A15F00;
+  --warning-bg: #FFF1D1;
+  --danger: #C8333F;
+  --danger-bg: #FDE6E8;
+  --info: #2F6E9F;
+  --info-bg: #E4F3FC;
+
+  /* --- Peran semantik --- */
+  --bg-page: var(--cloud-50);
+  --bg-section: var(--cloud-100);
+  --bg-card: var(--white);
+  --text: var(--navy-900);
+  --text-muted: var(--ink-600);
+  --link: var(--sky-600);
+  --focus: var(--pink-400);
+
+  /* --- Tipografi --- */
+  --font-display: "Fredoka", ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --font-body: "Nunito", ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --fs-h1: 2rem;      /* 32 → 44 */
+  --fs-h2: 1.5rem;    /* 24 → 32 */
+  --fs-h3: 1.25rem;   /* 20 → 24 */
+  --fs-body: 1rem;    /* 16 */
+  --fs-small: 0.875rem; /* 14 */
+  --fs-xs: 0.75rem;
+  --lh-tight: 1.2;
+  --lh-body: 1.55;
+
+  /* --- Spasi (basis 4px) --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* --- Bentuk --- */
+  --r-card: 20px;
+  --r-btn: 14px;
+  --r-input: 12px;
+  --r-chip: 999px;
+  --border-sticker: 2px solid var(--navy-900);
+  --shadow-sticker: 4px 4px 0 var(--navy-900);
+  --shadow-sticker-pressed: 1px 1px 0 var(--navy-900);
+  --shadow-soft: 0 1px 2px rgba(5, 42, 69, 0.06), 0 6px 20px rgba(5, 42, 69, 0.07);
+  --shadow-pop: 0 12px 40px rgba(5, 42, 69, 0.18);
+
+  /* --- Tata letak --- */
+  --content-max: 1120px;
+  --gutter: 16px;
+  --header-h: 64px;
+  --tap-min: 44px;
+
+  /* --- Gerak --- */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --fs-h1: 2.75rem;
+    --fs-h2: 2rem;
+    --fs-h3: 1.5rem;
+    --header-h: 72px;
+  }
+}

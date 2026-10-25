@@ -1,0 +1,5 @@
+{% comment %}
+Badge. Parameter: label, tone
+  tone: neutral | warning | info | navy | sky | success | danger | pink | live | vip | reguler
+  (Pemetaan OrderStatus → tone dibuat di fase 02 sebagai filter template.)
+{% endcomment %}<span class="badge badge--{{ tone|default:'neutral' }}">{{ label }}</span>

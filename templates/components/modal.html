@@ -1,0 +1,19 @@
+{% load ui %}{% comment %}
+Modal konfirmasi (native <dialog>; Esc & fokus ditangani browser).
+Parameter: id, trigger_label, trigger_variant, title, body,
+           confirm_label, confirm_variant (default primary), cancel_label
+Untuk isi/aksi kompleks (mis. form), salin markup ini dan ganti bagian modal__body/foot.
+{% endcomment %}<div x-data="modal">
+  <button type="button" class="btn btn--{{ trigger_variant|default:'secondary' }}" @click="show" aria-haspopup="dialog" aria-controls="{{ id }}">{{ trigger_label }}</button>
+  <dialog class="modal" id="{{ id }}" x-ref="dialog" @click="backdrop" aria-labelledby="{{ id }}-title">
+    <div class="modal__head">
+      <h2 id="{{ id }}-title">{{ title }}</h2>
+      <button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button>
+    </div>
+    <div class="modal__body">{{ body|linebreaks }}</div>
+    <div class="modal__foot">
+      <button type="button" class="btn btn--ghost" @click="hide">{{ cancel_label|default:"Batal" }}</button>
+      <button type="button" class="btn btn--{{ confirm_variant|default:'primary' }}" @click="hide">{{ confirm_label|default:"Oke" }}</button>
+    </div>
+  </dialog>
+</div>

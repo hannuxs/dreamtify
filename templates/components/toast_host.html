@@ -1,0 +1,12 @@
+{% load ui %}{# Wadah toast global. Pesan Django dibaca app.js dari daftar tersembunyi. #}
+<ul id="dt-messages" hidden>{% for message in messages %}<li data-tone="{{ message.tags|default:'info' }}">{{ message }}</li>{% endfor %}</ul>
+<div class="toast-host" x-data="toastHost" role="status" aria-live="polite">
+  <template x-for="t in items" :key="t.id">
+    <div :class="t.cls"
+         x-transition:enter="toast-enter" x-transition:enter-start="toast-enter-start" x-transition:enter-end="toast-enter-end"
+         x-transition:leave="toast-leave" x-transition:leave-start="toast-leave-start" x-transition:leave-end="toast-leave-end">
+      <span x-text="t.message"></span>
+      <button type="button" class="toast__close" :data-id="t.id" @click="dismiss" aria-label="Tutup pemberitahuan">{% icon "x" %}</button>
+    </div>
+  </template>
+</div>

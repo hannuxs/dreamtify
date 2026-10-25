@@ -1,0 +1,187 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}Komponen — {{ brand.name }} (dev){% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/dev-components.css' %}"><meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="container">
+  <section class="kit-section stack">
+    <p class="eyebrow">Hanya mode dev</p>
+    <h1 class="title-logo">Galeri komponen</h1>
+    <p class="text-muted">Cek warna, font, dan komponen dasar di laptop &amp; mode HP (F12 → ikon HP).
+      Pratinjau lain: <a href="{% url 'public:dashboard_preview' %}">kerangka dashboard</a>,
+      <a href="{% url 'public:error_preview' 404 %}">halaman 404</a>,
+      <a href="{% url 'public:error_preview' 500 %}">halaman 500</a>.</p>
+  </section>
+
+  <section class="kit-section">
+    <h2>Warna</h2>
+    <div class="swatch-grid">
+      {% for token, hex, use in swatches %}
+        <div class="swatch">
+          <div class="swatch__color sw-{{ token }}"></div>
+          <div class="swatch__meta"><strong>--{{ token }}</strong>{{ hex }}{% if use %}<br><span class="text-muted">{{ use }}</span>{% endif %}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="kit-section kit-type">
+    <h2>Tipografi</h2>
+    <h1>H1 Fredoka — BIGBANG in Jakarta</h1>
+    <h2>H2 Fredoka — Pricelist Presale</h2>
+    <h3>H3 Fredoka — Tiket #1</h3>
+    <p class="title-logo display">Judul gaya logo ☁️</p>
+    <p>Isi Nunito 16px. Kamu tinggal duduk manis, kami yang berjuang. Fee jasa dibayar penuh di awal;
+      bila tiket tidak didapat, uang kembali dikurangi booking slot.</p>
+    <p class="text-small text-muted">Teks kecil 14px — catatan &amp; keterangan.</p>
+    <p>Uang &amp; kode (tabular): <span class="money fw-bold">Rp 1.250.000</span> · <span class="code">DRM-7KX2QP</span></p>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Tombol</h2>
+    <div class="cluster">
+      {% include "components/button.html" with label="Pesan sekarang" variant="primary" %}
+      {% include "components/button.html" with label="Lihat event" variant="secondary" %}
+      {% include "components/button.html" with label="Nanti saja" variant="ghost" %}
+      {% include "components/button.html" with label="Batalkan pesanan" variant="danger" %}
+    </div>
+    <div class="cluster">
+      {% include "components/button.html" with label="Dengan ikon" icon="upload" variant="secondary" %}
+      {% include "components/button.html" with label="Kecil" size="sm" variant="primary" %}
+      {% include "components/button.html" with label="Besar" size="lg" variant="primary" %}
+      {% include "components/button.html" with label="Menyimpan" loading=True variant="primary" %}
+      {% include "components/button.html" with label="Nonaktif" disabled=True variant="primary" %}
+    </div>
+    <div class="grid-2">
+      {% include "components/button.html" with label="Tombol lebar penuh" full=True icon="arrow-right" %}
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Kartu</h2>
+    <div class="grid">
+      {% include "components/card.html" with title="Kartu biasa" text="Putih, radius 20px, border tipis, bayangan lembut." eyebrow="Default" %}
+      {% include "components/card.html" with title="Kartu stiker" text="Border navy 2px + bayangan tegas, untuk hal penting." variant="sticker" eyebrow="Penting" %}
+      {% include "components/card.html" with title="Kartu sorot" text="Latar cloud-200 untuk menyorot info." variant="highlight" eyebrow="Sorot" %}
+      {% include "components/card.html" with title="Kartu tint" text="Latar cloud-100 untuk bagian ringan." variant="tint" eyebrow="Tint" %}
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Badge</h2>
+    <p class="text-small text-muted">Status pesanan</p>
+    <div class="cluster">{% for tone, label in status_badges %}{% include "components/badge.html" %}{% endfor %}</div>
+    <p class="text-small text-muted">Hasil tiket</p>
+    <div class="cluster">{% for tone, label in result_badges %}{% include "components/badge.html" %}{% endfor %}</div>
+    <p class="text-small text-muted">Tier &amp; lainnya</p>
+    <div class="cluster">
+      {% include "components/badge.html" with tone="vip" label="VIP" %}
+      {% include "components/badge.html" with tone="reguler" label="Reguler" %}
+      {% include "components/badge.html" with tone="pink" label="Presale buka" %}
+      {% include "components/badge.html" with tone="info" label="Gensale segera" %}
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Tombol salin</h2>
+    <div class="copy-row">
+      <div><div class="text-small text-muted">Nominal transfer</div><div class="copy-row__value">Rp 750.000</div></div>
+      {% include "components/copy_button.html" with value="750000" label="Salin angka" toast="Nominal tersalin ✓" %}
+    </div>
+    <div class="copy-row">
+      <div><div class="text-small text-muted">BCA a.n. Norma Anissa Yuliana</div><div class="copy-row__value">7805519240</div></div>
+      {% include "components/copy_button.html" with value="7805519240" label="Salin nomor" %}
+    </div>
+    <div class="copy-row">
+      <div><div class="text-small text-muted">Kode pesanan</div><div class="copy-row__value code">DRM-7KX2QP</div></div>
+      {% include "components/copy_button.html" with value="DRM-7KX2QP" %}
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Toast</h2>
+    <p class="text-muted text-small">Klik untuk memunculkan toast (pojok kanan bawah di laptop, bawah tengah di HP).</p>
+    <div class="cluster">
+      <button class="btn btn--secondary btn--sm" type="button" x-data="toastTrigger" data-tone="info" data-message="Bukti transfer terkirim. Kami cek ya, kak!" @click="fire">Info</button>
+      <button class="btn btn--secondary btn--sm" type="button" x-data="toastTrigger" data-tone="success" data-message="Pembayaran diterima ✓" @click="fire">Sukses</button>
+      <button class="btn btn--secondary btn--sm" type="button" x-data="toastTrigger" data-tone="warning" data-message="Batas bayar tinggal 1 jam lagi" @click="fire">Peringatan</button>
+      <button class="btn btn--secondary btn--sm" type="button" x-data="toastTrigger" data-tone="danger" data-message="Ukuran file maksimal 10 MB" @click="fire">Error</button>
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Modal</h2>
+    <div class="cluster">
+      {% include "components/modal.html" with id="modal-demo" trigger_label="Buka modal konfirmasi" title="Batalkan pesanan?" body="Fee Rp 500.000 hangus. Uang harga tiket Rp 7.000.000 dikembalikan ke rekeningmu." confirm_label="Ya, batalkan" confirm_variant="danger" cancel_label="Tidak jadi" %}
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Accordion</h2>
+    <div class="accordion">
+      {% include "components/accordion_item.html" with title="Apa beda JASWAR dan JASTIP?" body="JASWAR: tim ikut war pakai data kamu, gelang kamu tukar sendiri. JASTIP: terima beres, pakai data tim, gelang kami tukarkan & serahkan." open=True %}
+      {% include "components/accordion_item.html" with title="Bagaimana kalau tidak dapat tiket?" body="Uang dikembalikan 100% dikurangi booking slot Rp 50.000 per tiket." %}
+      {% include "components/accordion_item.html" with title="Kenapa harus pilih kategori cadangan?" body="Kalau kategori utama habis, tim otomatis pindah ke cadangan tanpa konfirmasi supaya peluang dapat tiket lebih besar." %}
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Hitung mundur</h2>
+    <div class="cluster">
+      {% include "components/countdown.html" with target=countdown_far %}
+      {% include "components/countdown.html" with target=countdown_near %}
+      {% include "components/countdown.html" with target=countdown_past done="War sedang berlangsung" %}
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Stepper</h2>
+    {% include "components/stepper.html" with steps=steps current=2 %}
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Form dasar</h2>
+    <div class="grid-2">
+      <div class="field">
+        <label class="field__label" for="demo-nama">Nama lengkap</label>
+        <input class="input" id="demo-nama" placeholder="Sesuai KTP">
+        <span class="field__hint">Dipakai untuk data tiket.</span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="demo-wa">No. WhatsApp</label>
+        <input class="input" id="demo-wa" inputmode="tel" value="0812" aria-invalid="true" aria-describedby="demo-wa-err">
+        <span class="field__error" id="demo-wa-err">Nomor WA belum lengkap.</span>
+      </div>
+      <div class="field">
+        <label class="field__label" for="demo-cat">Kategori utama</label>
+        <select class="select" id="demo-cat"><option>Duality Package — Rp 3.500.000</option><option>CAT 1 — Rp 2.500.000</option></select>
+      </div>
+      <label class="check"><input type="checkbox" checked> <span>Pemegang tiket = saya (pemesan)</span></label>
+    </div>
+    <div class="alert alert--info">{% icon "info" %}<span>Fee jasa dibayar penuh di awal.</span></div>
+    <div class="alert alert--warning">{% icon "alert" %}<span>Batas pelunasan: Sen, 14 Sep 2026 19.00 WIB.</span></div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Empty state &amp; maskot</h2>
+    {% include "components/empty_state.html" with mascot="sleep" title="Belum ada event" text="Pantau IG kami ya, kak. Event baru diumumkan di sana." action_label="Lacak pesanan" action_href="#" %}
+    <div class="kit-mascots">
+      <figure><img src="{% static 'img/cloud-happy.svg' %}" alt="Awan senang" width="150" height="113"><figcaption>cloud-happy</figcaption></figure>
+      <figure><img src="{% static 'img/cloud-sleep.svg' %}" alt="Awan tidur" width="150" height="113"><figcaption>cloud-sleep</figcaption></figure>
+      <figure><img src="{% static 'img/cloud-sad.svg' %}" alt="Awan sedih" width="150" height="113"><figcaption>cloud-sad</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="kit-section stack">
+    <h2>Ikon</h2>
+    <div class="kit-icons">{% for name in icons %}<div>{% icon name %}{{ name }}</div>{% endfor %}</div>
+  </section>
+</div>
+
+<div class="bottom-bar">
+  <div><div class="bottom-bar__label">Tagihan sekarang</div><div class="bottom-bar__value">Rp 750.000</div></div>
+  {% include "components/button.html" with label="Lanjut" icon="arrow-right" %}
+</div>
+{% endblock %}

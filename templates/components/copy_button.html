@@ -1,0 +1,6 @@
+{% load ui %}{% comment %}
+Tombol salin. Parameter: value (teks yang disalin), label (default "Salin"), toast (pesan toast)
+{% endcomment %}<button type="button" class="copy" x-data="copyButton" data-copy="{{ value }}"{% if toast %} data-toast="{{ toast }}"{% endif %} @click="copy" :class="stateClass">
+  <span x-show="idle">{% icon "copy" %}</span><span x-show="copied" x-cloak>{% icon "check" %}</span>
+  <span>{{ label|default:"Salin" }}</span>
+</button>

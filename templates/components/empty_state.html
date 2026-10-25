@@ -1,0 +1,9 @@
+{% load static %}{% comment %}
+Empty state dengan maskot awan. Parameter: mascot (happy | sleep | sad, default sleep),
+title, text, action_label, action_href
+{% endcomment %}<div class="empty">
+  {% with face=mascot|default:"sleep" %}<img src="{% static 'img/cloud-'|add:face|add:'.svg' %}" alt="" width="160" height="120" loading="lazy">{% endwith %}
+  {% if title %}<h3>{{ title }}</h3>{% endif %}
+  {% if text %}<p>{{ text }}</p>{% endif %}
+  {% if action_label %}{% include "components/button.html" with label=action_label href=action_href variant="secondary" %}{% endif %}
+</div>

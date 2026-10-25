@@ -1,0 +1,12 @@
+{% load ui %}{% comment %}
+Tombol. Parameter (include ... with):
+  label    teks tombol (wajib)
+  variant  primary | secondary | ghost | danger   (default primary)
+  href     bila diisi → <a>, selain itu <button>
+  type     button | submit (default button)
+  icon     nama ikon dari sprite (opsional)
+  size     sm | lg (opsional)
+  full     True → lebar penuh (bukan "block": nama itu dipakai Django untuk block.super)
+  disabled True → nonaktif
+  loading  True → tampil spinner
+{% endcomment %}{% if href %}<a href="{{ href }}"{% else %}<button type="{{ type|default:'button' }}"{% endif %} class="btn btn--{{ variant|default:'primary' }}{% if size %} btn--{{ size }}{% endif %}{% if full %} btn--block{% endif %}{% if loading %} is-loading{% endif %}"{% if disabled %}{% if href %} aria-disabled="true" tabindex="-1"{% else %} disabled{% endif %}{% endif %}{% if loading %} aria-busy="true"{% endif %}>{% if icon %}{% icon icon %}{% endif %}<span>{{ label }}</span><span class="btn__spinner" aria-hidden="true"></span>{% if href %}</a>{% else %}</button>{% endif %}

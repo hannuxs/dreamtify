@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" role="img" aria-label="Awan sedih">
+  <g fill="#94C6E6" transform="translate(5 7)">
+    <circle cx="62" cy="80" r="34"/><circle cx="102" cy="60" r="42"/><circle cx="144" cy="82" r="30"/>
+    <rect x="30" y="80" width="140" height="46" rx="23"/>
+  </g>
+  <g fill="#BCE2F5">
+    <circle cx="62" cy="80" r="34"/><circle cx="102" cy="60" r="42"/><circle cx="144" cy="82" r="30"/>
+    <rect x="30" y="80" width="140" height="46" rx="23"/>
+  </g>
+  <ellipse cx="88" cy="38" rx="13" ry="7" fill="#fff" opacity=".75" transform="rotate(-20 88 38)"/>
+  <ellipse cx="50" cy="66" rx="8" ry="5" fill="#fff" opacity=".7" transform="rotate(-30 50 66)"/>
+  <g fill="none" stroke="#052A45" stroke-width="4" stroke-linecap="round">
+    <path d="M76 88l11-4"/><path d="M124 88l-11-4"/>
+    <path d="M92 112q8-8 16 0"/>
+  </g>
+  <circle cx="84" cy="96" r="4.5" fill="#052A45"/>
+  <circle cx="116" cy="96" r="4.5" fill="#052A45"/>
+  <path d="M120 103q4 7 0 10q-4-3 0-10z" fill="#3E7FB0"/>
+  <ellipse cx="70" cy="106" rx="8" ry="5" fill="#F26877" opacity=".5"/>
+  <ellipse cx="130" cy="106" rx="8" ry="5" fill="#F26877" opacity=".5"/>
+</svg>

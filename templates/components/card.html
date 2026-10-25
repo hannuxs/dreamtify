@@ -1,0 +1,9 @@
+{% comment %}
+Kartu sederhana. Untuk isi kompleks pakai markup langsung:
+  <article class="card [card--sticker|card--highlight|card--tint]">…</article>
+Parameter: title, text, variant (sticker | highlight | tint), eyebrow
+{% endcomment %}<article class="card{% if variant %} card--{{ variant }}{% endif %}">
+  {% if eyebrow %}<p class="eyebrow">{{ eyebrow }}</p>{% endif %}
+  {% if title %}<h3 class="card__title">{{ title }}</h3>{% endif %}
+  {% if text %}<p class="text-muted">{{ text }}</p>{% endif %}
+</article>

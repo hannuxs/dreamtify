@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" role="img" aria-label="Awan tertidur">
+  <g fill="#94C6E6" transform="translate(5 7)">
+    <circle cx="62" cy="80" r="34"/><circle cx="102" cy="60" r="42"/><circle cx="144" cy="82" r="30"/>
+    <rect x="30" y="80" width="140" height="46" rx="23"/>
+  </g>
+  <g fill="#BCE2F5">
+    <circle cx="62" cy="80" r="34"/><circle cx="102" cy="60" r="42"/><circle cx="144" cy="82" r="30"/>
+    <rect x="30" y="80" width="140" height="46" rx="23"/>
+  </g>
+  <ellipse cx="88" cy="38" rx="13" ry="7" fill="#fff" opacity=".75" transform="rotate(-20 88 38)"/>
+  <ellipse cx="50" cy="66" rx="8" ry="5" fill="#fff" opacity=".7" transform="rotate(-30 50 66)"/>
+  <g fill="none" stroke="#052A45" stroke-width="4.5" stroke-linecap="round">
+    <path d="M78 94q6 7 12 0"/><path d="M110 94q6 7 12 0"/>
+  </g>
+  <ellipse cx="100" cy="107" rx="5" ry="4" fill="#052A45"/>
+  <ellipse cx="70" cy="104" rx="8" ry="5" fill="#F26877" opacity=".6"/>
+  <ellipse cx="130" cy="104" rx="8" ry="5" fill="#F26877" opacity=".6"/>
+  <g fill="none" stroke="#3E7FB0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 34h12l-12 13h12"/>
+    <path d="M170 14h9l-9 10h9"/>
+  </g>
+</svg>
