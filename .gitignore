@@ -1,0 +1,24 @@
+# Rahasia & lingkungan
+.env
+.venv/
+venv/
+
+# Data runtime
+media/
+logs/
+backups/
+staticfiles/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
