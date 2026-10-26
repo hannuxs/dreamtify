@@ -197,6 +197,85 @@
       };
     });
 
+    /* --- Mode War: segarkan daftar tiap 15 detik tanpa mengganggu input aktif --- */
+    Alpine.data("warRefresh", function () {
+      return {
+        timer: null,
+        init: function () {
+          var self = this;
+          this.timer = setInterval(function () { self.refresh(); }, 15000);
+        },
+        destroy: function () { clearInterval(this.timer); },
+        busy: function () {
+          var list = document.getElementById("war-list");
+          if (!list || document.hidden) return true;
+          var active = document.activeElement;
+          if (active && list.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) return true;
+          if (list.querySelector("details[open], .htmx-request")) return true;
+          var now = Date.now();
+          return Array.prototype.some.call(list.querySelectorAll("[data-until]"), function (el) {
+            return Number(el.dataset.until) > now;
+          });
+        },
+        refresh: function () {
+          if (this.busy() || !window.htmx) return;
+          window.htmx.ajax("GET", this.$root.dataset.url, { target: "#war-list", select: "#war-list", swap: "outerHTML" });
+        },
+      };
+    });
+
+    /* --- Mode War: tombol undo 10 detik setelah hasil disimpan --- */
+    Alpine.data("warUndo", function () {
+      return {
+        left: 0,
+        timer: null,
+        get active() { return this.left > 0; },
+        get label() { return "Undo (" + this.left + ")"; },
+        init: function () {
+          var self = this;
+          var until = Number(this.$root.dataset.until) || 0;
+          var tick = function () {
+            self.left = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+            if (!self.left) {
+              clearInterval(self.timer);
+              self.$root.dataset.until = "0";
+            }
+          };
+          if (until > Date.now()) {
+            tick();
+            this.timer = setInterval(tick, 250);
+          }
+        },
+        destroy: function () { clearInterval(this.timer); },
+      };
+    });
+
+    /* --- Pilih banyak baris (Penyerahan) --- */
+    Alpine.data("bulkSelect", function () {
+      return {
+        selected: 0,
+        get countLabel() { return this.selected + " dipilih"; },
+        boxes: function () { return this.$root.querySelectorAll("input.js-bulk"); },
+        count: function () {
+          this.selected = Array.prototype.filter.call(this.boxes(), function (b) { return b.checked; }).length;
+        },
+        toggleAll: function (event) {
+          var on = event.target.checked;
+          Array.prototype.forEach.call(this.boxes(), function (b) { b.checked = on; });
+          this.count();
+        },
+      };
+    });
+
+    /* --- Kotak Kabar: setelah membuka WA (tab baru), segarkan halaman ini --- */
+    Alpine.data("sendNext", function () {
+      return {
+        reloadSoon: function () {
+          setTimeout(function () { window.location.reload(); }, 900);
+        },
+      };
+    });
+
     /* --- Area upload: seret/klik, validasi ukuran, pratinjau gambar --- */
     Alpine.data("fileDrop", function () {
       return {

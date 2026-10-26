@@ -16,6 +16,8 @@ urlpatterns = [
     path("lacak/<str:code>/rekening/", lacak_views.track_refund_account, name="track_refund_account"),
     path("lacak/<str:code>/batal/", lacak_views.track_cancel, name="track_cancel"),
     path("lacak/<str:code>/pemegang/<int:line_id>/", lacak_views.track_holder_edit, name="track_holder_edit"),
+    path("lacak/<str:code>/va/<int:va_id>/klaim/", lacak_views.track_va_claim, name="track_va_claim"),
+    path("lacak/<str:code>/va-mandiri/", lacak_views.track_va_mandiri, name="track_va_mandiri"),
     path("berkas/<slug:kind>/<int:pk>/", lacak_views.private_file, name="private_file"),
     # Hanya aktif saat DEBUG (view mengembalikan 404 di produksi)
     path("_komponen/", views.component_gallery, name="component_gallery"),

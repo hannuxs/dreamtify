@@ -1,0 +1,40 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Mode War — {{ phase.name }}{% endblock %}
+{% block page_title %}Mode War{% endblock %}
+
+{% block content %}
+<div id="war-root" class="stack" x-data="warRefresh" data-url="{{ refresh_url }}">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">{{ phase.event.name }}</p>
+      <div class="cluster"><h1 class="page-title">{{ phase.name }}</h1>
+        {% if phase.status == "WAR" %}<span class="badge badge--live">War live</span>{% else %}<span class="badge badge--neutral">{{ phase.get_status_display }}</span>{% endif %}</div>
+      {% if phase.war_at %}<p class="text-small text-muted">War {{ phase.war_at|date:"l, j F Y · H.i" }} WIB</p>{% endif %}
+    </div>
+    <div class="cluster">
+      {% if phase.status == "BUKA" or phase.status == "TUTUP" %}
+        <div x-data="modal"><button class="btn btn--primary btn--lg" type="button" @click="show">{% icon "bolt" %}<span>Mulai war</span></button>
+          <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="mulai-title">
+            <form method="post" action="{% url 'dashboard:war_start' phase.pk %}">{% csrf_token %}
+              <div class="modal__head"><h2 id="mulai-title">Mulai war {{ phase.name }}?</h2><button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+              <div class="modal__body"><p>{{ siap_count }} pesanan Siap war masuk Mode War. Pesanan yang belum lunas tidak ikut.</p></div>
+              <div class="modal__foot"><button type="button" class="btn btn--ghost" @click="hide">Batal</button><button type="submit" class="btn btn--primary">Mulai war</button></div>
+            </form></dialog></div>
+      {% elif phase.status == "WAR" %}
+        <div x-data="modal"><button class="btn btn--secondary" type="button" @click="show">Selesaikan war</button>
+          <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="selesai-title">
+            <form method="post" action="{% url 'dashboard:war_finish' phase.pk %}" class="stack">{% csrf_token %}
+              <div class="modal__head"><h2 id="selesai-title">Selesaikan war?</h2><button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+              <div class="modal__body stack stack-sm"><p>{{ counts.pending }} tiket belum diisi hasilnya.</p>
+                {% if counts.pending %}<label class="check"><input type="checkbox" name="mark_rest" value="1"><span>Tandai sisa {{ counts.pending }} tiket sebagai <strong>Gagal</strong></span></label>{% endif %}
+                <p class="text-small text-muted">Setelah selesai, hasil tidak bisa diubah dari Mode War.</p></div>
+              <div class="modal__foot"><button type="button" class="btn btn--ghost" @click="hide">Batal</button><button type="submit" class="btn btn--primary">Selesaikan</button></div>
+            </form></dialog></div>
+      {% endif %}
+    </div>
+  </div>
+  {% include "dashboard/war/_list.html" %}
+</div>
+{% endblock %}

@@ -26,6 +26,7 @@ from apps.core.models import AuditLog
 from apps.events.models import Event, SalePhase
 from apps.notifications.models import Notification
 from apps.orders.models import Order, Payment
+from apps.orders.selectors import handover_slots, refund_queue, shortfall_queue
 from apps.orders.services import quota
 from apps.testimonials.models import Testimonial
 
@@ -124,6 +125,7 @@ def logout_view(request):
 def home(request):
     now = timezone.now()
     week = now + timedelta(days=7)
+    refunds = refund_queue()
     stats = [
         {"label": "Bukti menunggu verifikasi", "value": Payment.objects.filter(status=PaymentStatus.MENUNGGU).count(),
          "url": reverse("dashboard:verify_queue")},
@@ -131,8 +133,16 @@ def home(request):
          "url": reverse("dashboard:waitlist")},
         {"label": "Waiting list", "value": Order.objects.filter(status=OrderStatus.WAITING_LIST).count(),
          "url": reverse("dashboard:waitlist")},
+        {"label": "Refund siap diproses", "value": sum(1 for o, _ in refunds if o.refund_account_number),
+         "url": reverse("dashboard:settlement") + "?tab=refund"},
+        {"label": "Refund menunggu rekening", "value": sum(1 for o, _ in refunds if not o.refund_account_number),
+         "url": reverse("dashboard:settlement") + "?tab=refund"},
+        {"label": "Kekurangan bayar", "value": len(shortfall_queue()),
+         "url": reverse("dashboard:settlement") + "?tab=kekurangan"},
+        {"label": "Tiket menunggu penyerahan", "value": handover_slots().count(), "url": reverse("dashboard:handover")},
         {"label": "Kabar belum dikirim", "value": Notification.objects.filter(
-            status=NotificationStatus.PERLU_DIKIRIM, channel=NotificationChannel.WA).count()},
+            status=NotificationStatus.PERLU_DIKIRIM, channel=NotificationChannel.WA).count(),
+         "url": reverse("dashboard:inbox")},
         {"label": "Testimoni menunggu", "value": Testimonial.objects.filter(status=TestimonialStatus.MENUNGGU).count()},
     ]
 

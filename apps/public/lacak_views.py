@@ -16,6 +16,10 @@ from apps.core import ratelimit
 from apps.core.actors import Actor
 from apps.core.enums import (
     INCOMING_PAYMENT_KINDS,
+    OrderStatus,
+    PhaseStatus,
+    TicketPaymentMethod,
+    VaSource,
     PRE_WAR_STATUSES,
     CancelReason,
     PaymentKind,
@@ -26,13 +30,13 @@ from apps.core.phone import normalize_wa
 from apps.dashboard.permissions import is_admin
 from apps.orders.models import Order, OrderLine, Payment, TicketSlot, VaNotice
 from apps.orders.selectors import get_order
-from apps.orders.services import codes, guidance, settlement, transitions, updates
+from apps.orders.services import codes, guidance, settlement, transitions, updates, va as va_service
 from apps.orders.services.links import check_promotor_file_signature, tracking_url
 from apps.orders.services.transitions import InvalidTransition
 from apps.orders.services.validation import HolderData
 
 from . import access
-from .forms import HolderEditForm, PaymentUploadForm, RefundAccountForm, TrackLoginForm
+from .forms import CustomerVaForm, HolderEditForm, PaymentUploadForm, RefundAccountForm, TrackLoginForm
 
 LOGIN_LIMIT = 10
 LOGIN_WINDOW = 15 * 60
@@ -88,7 +92,7 @@ def track_login(request):
 # Halaman lacak
 # ---------------------------------------------------------------------------
 
-def _lacak_context(request, order, *, pay_form=None, refund_form=None):
+def _lacak_context(request, order, *, pay_form=None, refund_form=None, va_form=None):
     summary = settlement.summarize(order)
     due = guidance.payment_due(order, summary)
     accounts = list(BankAccount.objects.filter(is_active=True))
@@ -108,7 +112,13 @@ def _lacak_context(request, order, *, pay_form=None, refund_form=None):
         "refund_locked": any(p.kind == PaymentKind.REFUND for p in payments),
         "incoming": [p for p in payments if p.kind in INCOMING_PAYMENT_KINDS],
         "refunds": [p for p in payments if p.kind == PaymentKind.REFUND],
-        "active_va": [v for v in order.va_notices.all() if v.status in (VaStatus.AKTIF, VaStatus.DIKLAIM_CUSTOMER)],
+        "active_va": [v for v in order.va_notices.all()
+                      if v.source == VaSource.ADMIN and v.status in (VaStatus.AKTIF, VaStatus.DIKLAIM_CUSTOMER)],
+        "my_vas": [v for v in order.va_notices.all() if v.source == VaSource.CUSTOMER],
+        "live_polling": order.phase.status == PhaseStatus.WAR,
+        "va_form": va_form or (CustomerVaForm() if (
+            order.event.customer_va_enabled and order.ticket_payment_method == TicketPaymentMethod.TITIP_BAYAR
+            and order.phase.status == PhaseStatus.WAR and order.status == OrderStatus.PROSES_WAR) else None),
         "can_edit_holders": order.status in PRE_WAR_STATUSES,
         "can_cancel": can_cancel,
         "cancel_preview": settlement.cancellation_preview(order, CancelReason.BATAL_CUSTOMER) if can_cancel else None,
@@ -256,3 +266,39 @@ def private_file(request, kind, pk):
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "private, no-store"
     return response
+
+
+@require_POST
+def track_va_claim(request, code, va_id):
+    order = _order_or_404(request, code)
+    notice = get_object_or_404(VaNotice, pk=va_id, order=order)
+    try:
+        va_service.claim_va_paid(notice, actor=_customer(request, order))
+    except InvalidTransition as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "Terima kasih! Kami cek pembayaran VA-nya ya, kak.")
+    return redirect("public:track_order", code=order.code)
+
+
+@require_POST
+def track_va_mandiri(request, code):
+    order = _order_or_404(request, code)
+    form = CustomerVaForm(request.POST, request.FILES)
+    if form.is_valid():
+        d = form.cleaned_data
+        try:
+            va_service.create_va_notice(order, bank=d["bank"], va_number=d["va_number"], amount=d["amount"],
+                                        expires_at=d["expires_at"], screenshot=d["screenshot"],
+                                        source=VaSource.CUSTOMER, actor=_customer(request, order))
+        except InvalidTransition as exc:
+            messages.error(request, str(exc))
+            return redirect("public:track_order", code=order.code)
+        except ValidationError as exc:
+            for field, errors in exc.message_dict.items():
+                for e in errors:
+                    form.add_error(field if field in form.fields else None, e)
+        else:
+            messages.success(request, "VA terkirim! Tim segera membayarkannya.")
+            return redirect("public:track_order", code=order.code)
+    return render(request, "public/track_order.html", _lacak_context(request, order, va_form=form))

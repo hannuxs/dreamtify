@@ -1,0 +1,60 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Penyerahan{% endblock %}
+{% block page_title %}Penyerahan{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <h1 class="page-title">Penyerahan tiket</h1>
+    <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:handover_export' %}{% if event %}?event={{ event.pk }}{% endif %}">{% icon "download" %}<span>Excel daftar gelang</span></a>
+  </div>
+  <form method="get" class="card filter-bar filter-bar--3">
+    <select class="select" name="event" aria-label="Event"><option value="">Semua event</option>
+      {% for e in events %}<option value="{{ e.pk }}"{% if event and event.pk == e.pk %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>
+    <select class="select" name="service" aria-label="Layanan"><option value="">Semua layanan</option>
+      <option value="JASTIP"{% if service == "JASTIP" %} selected{% endif %}>JASTIP (gelang)</option>
+      <option value="JASWAR"{% if service == "JASWAR" %} selected{% endif %}>JASWAR (info)</option></select>
+    <select class="select" name="status" aria-label="Status penyerahan"><option value="">Belum tuntas</option>
+      {% for value, label in statuses %}{% if value != "TIDAK_PERLU" %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select>
+    <label class="check"><input type="checkbox" name="selesai" value="1"{% if include_done %} checked{% endif %}><span>Termasuk yang selesai</span></label>
+    <button class="btn btn--secondary btn--sm" type="submit">Filter</button>
+  </form>
+
+  {% if slots %}
+  <form method="post" action="{% url 'dashboard:handover_action' %}" enctype="multipart/form-data" class="stack" x-data="bulkSelect" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="query" value="{{ query }}">
+    <div class="cluster cluster-between">
+      <label class="check"><input type="checkbox" @change="toggleAll"><span>Pilih semua ({{ slots|length }})</span></label>
+      <span class="text-small text-muted" x-text="countLabel">0 dipilih</span>
+    </div>
+    <ul class="handover-list">
+      {% for slot in slots %}{% with order=slot.line.order line=slot.line %}
+        <li>
+          <label class="check"><input type="checkbox" name="slots" value="{{ slot.pk }}" class="js-bulk" @change="count">
+            <span><a class="code" href="{% url 'dashboard:order_detail' order.code %}">{{ order.code }}</a> · <strong>{{ line.holder_name }}</strong>
+              <span class="text-small text-muted">· {{ line.service_type }} · {{ slot.secured_category.name }} · tiket {{ slot.index }}</span></span></label>
+          <div class="cluster">
+            <span class="badge badge--{% if slot.fulfillment_status == 'DISERAHKAN' or slot.fulfillment_status == 'INFO_DIKIRIM' %}success{% elif slot.fulfillment_status == 'MENUNGGU' %}neutral{% else %}info{% endif %}">{{ slot.get_fulfillment_status_display }}</span>
+            {% if slot.handover_method %}<span class="text-small">{{ slot.get_handover_method_display }}{% if slot.handover_detail %} · {{ slot.handover_detail }}{% endif %}</span>{% endif %}
+            {% if order.pk in shortfall_orders %}<span class="badge badge--danger">Belum lunas (kekurangan)</span>{% endif %}
+            {% if slot.eticket_file %}<a class="text-small" href="{% url 'public:private_file' 'etiket' slot.pk %}" target="_blank" rel="noopener">e-tiket</a>{% endif %}
+          </div>
+        </li>
+      {% endwith %}{% endfor %}
+    </ul>
+    <section class="card stack handover-actions">
+      <h2 class="card__title">Aksi untuk tiket terpilih</h2>
+      <div class="form-grid">{% for field in form %}{% include "components/field.html" with field=field %}{% endfor %}</div>
+      <p class="text-small text-muted">JASTIP: Ditukar → Siap diserahkan (wajib metode) → Diserahkan (wajib nama penerima). JASWAR: Kirim info
+        (e-tiket hanya bila 1 tiket dipilih; info penukaran gelang diambil dari aturan event).</p>
+      <div><button class="btn btn--primary" type="submit">Terapkan</button></div>
+    </section>
+  </form>
+  {% else %}
+    {% include "components/empty_state.html" with mascot="happy" title="Tidak ada tiket" text="Belum ada tiket yang perlu diserahkan untuk filter ini." %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -15,7 +15,15 @@
 
   <div id="tab-panel" class="stack">
     {% if tab == "template" %}
-      {% include "components/empty_state.html" with mascot="sleep" title="Segera hadir" text="Pengaturan template pesan WhatsApp dibangun bersama Kotak Kabar." %}
+      <p class="text-muted text-small">Isi pesan WA &amp; email otomatis. Placeholder seperti <code>{kode}</code> dan <code>{link_lacak}</code> diganti otomatis.</p>
+      <ul class="tpl-list">
+        {% for t in templates %}
+          <li><a href="{% url 'dashboard:template_edit' t.key %}"><strong>{{ t.title }}</strong> <code class="text-small">{{ t.key }}</code></a>
+            <span class="cluster">{% if not t.active %}<span class="badge badge--neutral">nonaktif</span>{% endif %}
+              {% if t.customized %}<span class="badge badge--info">diubah</span>{% endif %}
+              {% if t.unknown %}<span class="badge badge--danger">placeholder tak dikenal</span>{% endif %}</span></li>
+        {% endfor %}
+      </ul>
     {% elif formset %}
       <form method="post" class="stack" novalidate hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
         {% csrf_token %}

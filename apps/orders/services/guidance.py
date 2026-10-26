@@ -124,3 +124,34 @@ def expected_amounts(order, kind: str, summary=None) -> tuple[int, int]:
     if kind == PaymentKind.KEKURANGAN:
         return s.shortfall, 0
     return 0, 0
+
+
+# Kabar yang boleh dibuat manual dari detail pesanan (docs/05 §3 "Kirim kabar WA")
+MANUAL_MESSAGE_KEYS = (
+    "PENGINGAT_FEE", "FEE_DITERIMA", "TAGIHAN_PELUNASAN", "PENGINGAT_PELUNASAN", "SIAP_WAR",
+    "HASIL_SECURED", "HASIL_SEBAGIAN", "HASIL_GAGAL", "REFUND_ISI_REKENING", "REFUND_SELESAI",
+    "KEKURANGAN_BAYAR", "GELANG_SIAP", "ETIKET_INFO", "DIBATALKAN", "SELESAI_MINTA_TESTIMONI",
+    "WAITING_LIST_NAIK",
+)
+
+
+def message_extra(order, key: str, summary=None) -> dict:
+    """Nominal & batas waktu yang tepat untuk sebuah template pesan."""
+    s = summary or settlement.summarize(order)
+    if key in ("PENGINGAT_FEE", "WAITING_LIST_NAIK", "PESANAN_DIBUAT"):
+        return {"nominal": s.remaining_initial, "batas_waktu": order.fee_deadline}
+    if key in ("TAGIHAN_PELUNASAN", "PENGINGAT_PELUNASAN"):
+        return {"nominal": s.remaining_before_war, "batas_waktu": order.phase.pelunasan_deadline}
+    if key == "FEE_DITERIMA":
+        return {"nominal": s.initial_due}
+    if key == "SIAP_WAR":
+        return {"batas_waktu": order.phase.war_at}
+    if key in ("REFUND_ISI_REKENING", "REFUND_SELESAI"):
+        return {"nominal": s.refund_due or s.refunded}
+    if key == "KEKURANGAN_BAYAR":
+        return {"nominal": s.shortfall}
+    if key == "DIBATALKAN":
+        return {"alasan": (order.get_cancel_reason_display() or "").lower()}
+    if key == "ETIKET_INFO":
+        return {"detail_penyerahan": order.event.redemption_info}
+    return {}

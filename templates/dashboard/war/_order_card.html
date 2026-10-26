@@ -1,0 +1,87 @@
+{% load ui %}<article class="card war-order{% if order.status != 'PROSES_WAR' and order.status != 'SIAP_WAR' %} war-order--done{% endif %}" id="war-order-{{ order.pk }}">
+  <header class="war-order__head">
+    <div><a class="code" href="{% url 'dashboard:order_detail' order.code %}">{{ order.code }}</a> · <strong>{{ order.buyer_name }}</strong>
+      <span class="text-small text-muted">· {{ order.created_at|date:"j M H.i.s" }}</span></div>
+    <div class="cluster"><span class="chip">{{ order.get_ticket_payment_method_display }}</span>
+      <span class="badge badge--{{ order.status|status_tone }}">{{ order.get_status_display }}</span></div>
+  </header>
+
+  {% for item in lines %}{% with line=item.line %}
+    <div class="war-line">
+      <p class="war-line__who"><strong>{{ line.holder_name }}</strong> · {{ line.service_type }} · {{ line.quantity }} tiket
+        <span class="text-small text-muted">· {% for key, label, cat in item.choices %}{{ label }}: {{ cat.name }}{% if not forloop.last %} · {% endif %}{% endfor %}</span></p>
+      {% for slot in item.slots %}
+        <form class="war-slot war-slot--{{ slot.result|lower }}" hx-post="{% url 'dashboard:war_slot' slot.pk %}" hx-target="closest .war-order" hx-swap="outerHTML"
+              x-data="warUndo" data-until="{% if slot.pk == undo_slot %}{{ undo_until }}{% else %}0{% endif %}">
+          <input type="hidden" name="version" value="{{ slot.version }}">
+          <div class="war-slot__status">
+            <span class="text-small fw-bold">Tiket {{ slot.index }}</span>
+            <span class="badge badge--{{ slot.result|result_tone }}">{% if slot.result == "SECURED" %}Dapat {{ slot.secured_category.name }}{% else %}{{ slot.get_result_display }}{% endif %}</span>
+            {% if slot.ticket_reference %}<span class="text-small text-muted">#{{ slot.ticket_reference }}</span>{% endif %}
+            <button class="btn btn--secondary btn--sm war-undo" type="submit" name="pick" value="undo" x-show="active" x-cloak x-text="label">Undo</button>
+          </div>
+          {% if can_edit %}
+            {% if slot.result == "MENUNGGU" %}
+              <div class="war-btns">
+                {% for key, label, cat in item.choices %}
+                  <button class="war-btn{% if key == 'primary' %} war-btn--main{% else %} war-btn--backup{% endif %}" type="submit" name="pick" value="{{ key }}">{{ label }}<small>{{ cat.name }}</small></button>
+                {% endfor %}
+                <button class="war-btn war-btn--fail" type="submit" name="pick" value="gagal">Gagal</button>
+                <button class="war-btn war-btn--fail" type="submit" name="pick" value="gagal_customer">Gagal<small>customer</small></button>
+              </div>
+              <details class="war-more">
+                <summary>Lainnya… / kode tiket</summary>
+                <div class="war-more__body">
+                  <select class="select" name="other" aria-label="Kategori lain">{% for c in categories %}<option value="{{ c.pk }}">{{ c.name }} ({{ c.get_fee_tier_display }})</option>{% endfor %}</select>
+                  <button class="btn btn--secondary btn--sm" type="submit" name="pick" value="other">Dapat kategori ini</button>
+                  <input class="input" name="ticket_reference" placeholder="Kode tiket / booking (opsional)" maxlength="100" autocomplete="off">
+                </div>
+              </details>
+            {% else %}
+              <details class="war-more">
+                <summary>Ubah hasil</summary>
+                <div class="war-btns">
+                  {% for key, label, cat in item.choices %}<button class="war-btn war-btn--backup" type="submit" name="pick" value="{{ key }}">{{ label }}<small>{{ cat.name }}</small></button>{% endfor %}
+                  <button class="war-btn war-btn--fail" type="submit" name="pick" value="gagal">Gagal</button>
+                  <button class="war-btn war-btn--fail" type="submit" name="pick" value="gagal_customer">Gagal<small>customer</small></button>
+                  <button class="war-btn" type="submit" name="pick" value="undo">Kosongkan</button>
+                </div>
+              </details>
+            {% endif %}
+          {% endif %}
+        </form>
+      {% endfor %}
+    </div>
+  {% endwith %}{% endfor %}
+
+  {% if is_va %}
+    <section class="war-va">
+      {% for item in vas %}{% with v=item.va %}
+        <div class="war-va__row">
+          <span class="text-small"><strong>VA {{ v.bank }}</strong> <span class="num">{{ v.va_number }}</span> · {{ v.amount|rupiah }}{% if v.expires_at %} · sebelum {{ v.expires_at|date:"H.i" }}{% endif %}</span>
+          <span class="badge badge--{% if v.status == 'LUNAS' %}success{% elif v.status == 'DIKLAIM_CUSTOMER' %}pink{% elif v.status == 'KEDALUWARSA' %}danger{% else %}info{% endif %}">{{ v.get_status_display }}</span>
+          {% if item.notification %}<a class="btn btn--primary btn--sm" href="{% url 'dashboard:inbox_send' item.notification.pk %}" target="_blank" rel="noopener">{% icon "chat" %}<span>Kirim WA</span></a>{% endif %}
+          {% if v.status == "AKTIF" or v.status == "DIKLAIM_CUSTOMER" %}
+            <button class="btn btn--ghost btn--sm" type="button" hx-post="{% url 'dashboard:war_va_paid' v.pk %}" hx-target="closest .war-order" hx-swap="outerHTML">Tandai lunas</button>
+          {% endif %}
+        </div>
+      {% endwith %}{% endfor %}
+      {% if va_form %}
+        <details class="war-more"{% if va_form.is_bound %} open{% endif %}>
+          <summary>{% icon "bolt" %} Kirim VA ke customer</summary>
+          <form class="stack stack-sm war-more__body" hx-post="{% url 'dashboard:war_va' order.code %}" hx-target="closest .war-order" hx-swap="outerHTML">
+            {% include "components/form_errors.html" with form=va_form %}
+            <div class="form-grid">
+              {% include "components/field.html" with field=va_form.bank %}
+              {% include "components/field.html" with field=va_form.va_number %}
+              {% include "components/field.html" with field=va_form.amount %}
+              {% include "components/field.html" with field=va_form.expires_at %}
+            </div>
+            {% include "components/field.html" with field=va_form.slots %}
+            <button class="btn btn--primary" type="submit">Simpan VA</button>
+          </form>
+        </details>
+      {% endif %}
+    </section>
+  {% endif %}
+</article>

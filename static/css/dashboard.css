@@ -20,10 +20,12 @@
   background: var(--white);
   border-bottom: 1px solid var(--line);
 }
-.dash-topbar__title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; }
+.dash-topbar__title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600;
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 480px) { .dash-topbar__title { font-size: 1.25rem; } }
 .dash-topbar__brand img { height: 36px; width: auto; }
 .dash-user { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); }
-.dash-user__name { font-weight: 800; }
+.dash-user__name { font-weight: 800; white-space: nowrap; max-width: 12ch; overflow: hidden; text-overflow: ellipsis; }
 .dash-content { padding: var(--sp-5) var(--gutter); max-width: 1280px; }
 
 /* --- Bar navigasi bawah (HP) --- */
@@ -252,3 +254,61 @@ kbd { font-family: var(--font-body); font-size: 0.75em; font-weight: 800; paddin
   padding-bottom: var(--sp-3); border-bottom: 1px dashed var(--line); }
 .queue li:last-child { border-bottom: 0; }
 .page-head form.cluster .select { width: auto; min-height: 40px; }
+
+/* --- Mode War (HP dulu) --- */
+.war-pick { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); text-decoration: none; color: var(--navy-900); }
+.war-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); }
+.war-stats div { display: flex; flex-direction: column; align-items: center; padding: var(--sp-2); border-radius: 14px; background: var(--white); border: 1px solid var(--line); }
+.war-stats span { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; }
+.war-stats small { font-size: var(--fs-xs); color: var(--ink-600); font-weight: 700; }
+.war-stats .is-ok span { color: var(--success); }
+.war-stats .is-fail span { color: var(--danger); }
+.war-stats .is-wait span { color: var(--warning); }
+.war-warn summary { cursor: pointer; display: flex; gap: var(--sp-2); }
+.war-order { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4); }
+.war-order--done { opacity: 0.85; }
+.war-order__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-2); }
+.war-line { display: flex; flex-direction: column; gap: var(--sp-2); padding-top: var(--sp-2); border-top: 1px dashed var(--line); }
+.war-line__who { font-size: var(--fs-small); }
+.war-slot { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border-radius: 14px; background: var(--cloud-50); border: 1px solid var(--line); }
+.war-slot--secured { background: var(--success-bg); border-color: var(--success); }
+.war-slot--gagal, .war-slot--gagal_customer { background: var(--danger-bg); border-color: var(--danger); }
+.war-slot__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.war-undo { margin-left: auto; }
+.war-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+@media (min-width: 640px) { .war-btns { grid-template-columns: repeat(5, 1fr); } }
+.war-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; padding: 6px;
+  border-radius: 12px; border: 2px solid var(--navy-900); background: var(--white); color: var(--navy-900);
+  font-weight: 800; font-size: 0.9375rem; line-height: 1.15; }
+.war-btn small { font-size: 0.6875rem; font-weight: 700; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.war-btn--main { background: var(--navy-900); color: var(--white); }
+.war-btn--backup { background: var(--cloud-200); border-color: var(--sky-600); }
+.war-btn--fail { background: var(--white); color: var(--danger); border-color: var(--danger); }
+.war-btn:active { transform: translateY(2px); }
+.war-more > summary { cursor: pointer; font-size: var(--fs-small); font-weight: 800; color: var(--sky-600); min-height: 36px; display: flex; align-items: center; gap: var(--sp-2); }
+.war-more__body { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-2); }
+.war-va { display: flex; flex-direction: column; gap: var(--sp-2); padding-top: var(--sp-2); border-top: 1px dashed var(--line); }
+.war-va__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.war-cva { border: 2px solid var(--pink-400); }
+
+/* --- Penyerahan, Kotak Kabar, template --- */
+.filter-bar--3 { align-items: center; }
+@media (min-width: 1024px) { .filter-bar--3 { grid-template-columns: 1.4fr 1fr 1fr auto auto; } }
+.select--auto { width: auto; min-height: 40px; }
+.handover-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.handover-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-3);
+  background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+.handover-actions { position: sticky; bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom)); z-index: 5; border: 2px solid var(--navy-900); }
+@media (min-width: 1024px) { .handover-actions { bottom: var(--sp-3); } }
+.msg-text { white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 0.9375rem; margin: 0;
+  padding: var(--sp-3); background: var(--cloud-50); border-radius: 12px; border: 1px solid var(--line); }
+.msg-text--bubble { background: #E7FFDB; border-color: #C5E8B0; }
+.inbox-item__text summary { cursor: pointer; color: var(--ink-600); }
+.tpl-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.tpl-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4);
+  background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+.tpl-list a { color: var(--navy-900); text-decoration: none; }
+.sequence .msg-text { font-size: 1rem; }
+.pay-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.pay-list li { display: flex; flex-direction: column; gap: 4px; padding-bottom: var(--sp-3); border-bottom: 1px dashed var(--line); }
+.pay-list li:last-child { border-bottom: 0; padding-bottom: 0; }

@@ -1,0 +1,20 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Mode War{% endblock %}
+{% block page_title %}Mode War{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <h1 class="page-title">Pilih tahap</h1>
+  {% for p in phases %}
+    <a class="card war-pick" href="{% url 'dashboard:war_mode' p.pk %}">
+      <div><p class="eyebrow">{{ p.event.name }}</p><strong>{{ p.name }}</strong>
+        <span class="text-small text-muted">{% if p.war_at %} · war {{ p.war_at|date:"D, j M H.i" }}{% endif %}</span></div>
+      {% if p.status == "WAR" %}<span class="badge badge--live">War live</span>{% else %}<span class="badge badge--neutral">{{ p.get_status_display }}</span>{% endif %}
+    </a>
+  {% empty %}
+    {% include "components/empty_state.html" with mascot="sleep" title="Belum ada tahap" text="Buat event & tahap dulu di menu Event." %}
+  {% endfor %}
+</div>
+{% endblock %}

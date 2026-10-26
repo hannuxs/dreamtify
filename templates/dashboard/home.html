@@ -51,6 +51,7 @@
               <p class="text-small text-muted">Belum ada pesanan.</p>
             {% endif %}
             <div class="cluster card__footer">
+              {% if a.is_war or a.phase.status == "BUKA" or a.phase.status == "TUTUP" %}<a class="btn btn--primary btn--sm" href="{% url 'dashboard:war_mode' a.phase.pk %}">{% icon "bolt" %}<span>Mode War</span></a>{% endif %}
               <a class="btn btn--secondary btn--sm" href="{% url 'dashboard:order_list' %}?phase={{ a.phase.pk }}">Pesanan</a>
               <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:event_edit' a.event.pk 'info' %}">Kelola event</a>
               <a class="btn btn--ghost btn--sm" href="{% url 'public:event_detail' a.event.slug %}" target="_blank" rel="noopener">Lihat halaman</a>

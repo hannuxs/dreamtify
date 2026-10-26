@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 
 from apps.core.crypto import digits_only
 from apps.core.enums import Gender, ServiceType, TicketPaymentMethod
-from apps.core.forms import DateInput, RupiahField, StyledFormMixin
+from apps.core.forms import DATETIME_INPUT_FORMATS, DateInput, DateTimeLocalInput, RupiahField, StyledFormMixin
 from apps.core.models import BankAccount
 from apps.core.phone import normalize_wa
 from apps.core.uploads import ACCEPT_ATTR, process_private_upload
@@ -205,3 +205,19 @@ class HolderEditForm(StyledFormMixin, forms.Form):
             self.fields["nik"].help_text = f"Saat ini •••• {line.holder_nik_last4}. Kosongkan bila tidak berubah."
         if not after_war:
             del self.fields["reason"]
+
+
+class CustomerVaForm(StyledFormMixin, forms.Form):
+    """VA hasil war mandiri yang dikirim customer titip bayar (docs/02 §8.4)."""
+
+    bank = forms.CharField(label="Bank VA", max_length=50)
+    va_number = forms.CharField(label="Nomor VA", max_length=64, widget=forms.TextInput(attrs={"inputmode": "numeric"}))
+    amount = RupiahField(label="Nominal (Rp)")
+    expires_at = forms.DateTimeField(label="Bayar sebelum", required=False, widget=DateTimeLocalInput(),
+                                     input_formats=DATETIME_INPUT_FORMATS)
+    screenshot = forms.FileField(label="Screenshot VA (opsional)", required=False,
+                                 widget=forms.ClearableFileInput(attrs={"accept": ACCEPT_ATTR}))
+
+    def clean_screenshot(self):
+        shot = self.cleaned_data.get("screenshot")
+        return process_private_upload(shot, name="va") if shot else None

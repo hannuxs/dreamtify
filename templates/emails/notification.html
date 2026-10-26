@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="id">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ title }}</title></head>
+<body style="margin:0;padding:0;background:#F5FBFF;font-family:Nunito,'Segoe UI',Arial,sans-serif;color:#052A45;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5FBFF;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:2px solid #052A45;border-radius:20px;">
+        <tr><td style="padding:24px 24px 8px;">
+          <p style="margin:0;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#3E7FB0;">{{ brand }}</p>
+          <h1 style="margin:6px 0 0;font-size:22px;line-height:1.3;color:#052A45;">{{ title }}</h1>
+          <p style="margin:4px 0 0;font-size:14px;color:#4A6175;">Pesanan <strong>{{ order.code }}</strong> · {{ order.event.name }}</p>
+        </td></tr>
+        <tr><td style="padding:16px 24px 24px;font-size:16px;line-height:1.6;">{{ text|linebreaksbr|urlize }}</td></tr>
+        <tr><td style="padding:16px 24px;background:#E4F3FC;border-radius:0 0 18px 18px;font-size:13px;color:#4A6175;">
+          {{ brand }} · {{ tagline }}<br>Email ini dikirim otomatis. Balas lewat WhatsApp admin bila ada pertanyaan.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

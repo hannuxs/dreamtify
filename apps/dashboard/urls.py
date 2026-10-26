@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_events, views_orders, views_owner, views_verify
+from . import views, views_events, views_inbox, views_orders, views_owner, views_settlement, views_verify, views_war
 
 app_name = "dashboard"
 
@@ -25,8 +25,32 @@ urlpatterns = [
     path("verifikasi/", views_verify.verify_queue, name="verify_queue"),
     path("verifikasi/<int:pk>/", views_verify.verify_action, name="verify_action"),
     path("waiting-list/", views_verify.waitlist, name="waitlist"),
+    path("pesanan/<str:code>/kabar/", views_inbox.order_message, name="order_message"),
+    # Mode War
+    path("war/", views_war.war_index, name="war_index"),
+    path("war/<int:phase_id>/", views_war.war_mode, name="war_mode"),
+    path("war/<int:phase_id>/mulai/", views_war.war_start, name="war_start"),
+    path("war/<int:phase_id>/selesai/", views_war.war_finish, name="war_finish"),
+    path("war/tiket/<int:slot_id>/", views_war.war_slot, name="war_slot"),
+    path("war/pesanan/<str:code>/va/", views_war.war_va, name="war_va"),
+    path("war/va/<int:va_id>/lunas/", views_war.war_va_paid, name="war_va_paid"),
+    # Penyelesaian & penyerahan
+    path("penyelesaian/", views_settlement.settlement_page, name="settlement"),
+    path("penyelesaian/refund/<str:code>/", views_settlement.refund_record, name="refund_record"),
+    path("penyelesaian/ingatkan/<str:code>/<slug:kind>/", views_settlement.remind, name="remind"),
+    path("penyelesaian/refund.xlsx", views_settlement.refund_export, name="refund_export"),
+    path("penyerahan/", views_settlement.handover_page, name="handover"),
+    path("penyerahan/aksi/", views_settlement.handover_action, name="handover_action"),
+    path("penyerahan/gelang.xlsx", views_settlement.handover_export, name="handover_export"),
+    # Kotak Kabar
+    path("kabar/", views_inbox.inbox, name="inbox"),
+    path("kabar/beruntun/", views_inbox.inbox_sequence, name="inbox_sequence"),
+    path("kabar/<int:pk>/kirim/", views_inbox.inbox_send, name="inbox_send"),
+    path("kabar/<int:pk>/lewati/", views_inbox.inbox_skip, name="inbox_skip"),
+    path("kabar/<int:pk>/ubah/", views_inbox.inbox_edit, name="inbox_edit"),
     # Owner
     path("pengaturan/", views_owner.redirect_settings, name="settings"),
+    path("pengaturan/template/<slug:key>/", views_inbox.template_edit, name="template_edit"),
     path("pengaturan/<slug:tab>/", views_owner.settings_page, name="settings_tab"),
     path("pengguna/", views_owner.user_list, name="user_list"),
     path("pengguna/baru/", views_owner.user_create, name="user_create"),

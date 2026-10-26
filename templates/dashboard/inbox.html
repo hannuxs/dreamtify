@@ -1,0 +1,60 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Kotak Kabar{% endblock %}
+{% block page_title %}Kotak Kabar{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <div><h1 class="page-title">Kotak Kabar</h1>
+      <p class="text-small text-muted">{{ pending_total }} pesan WA belum dikirim. "Kirim WA" membuka WhatsApp dengan pesan siap kirim.</p></div>
+    <a class="btn btn--primary" href="{% url 'dashboard:inbox_sequence' %}?{{ params|urlencode_dict }}">{% icon "megaphone" %}<span>Mulai kirim beruntun</span></a>
+  </div>
+  <nav class="tabs" aria-label="Status kabar">
+    {% for key, label in tabs %}<a class="tabs__item{% if key == tab %} is-active{% endif %}" href="?tab={{ key }}">{{ label }}</a>{% endfor %}
+  </nav>
+  <form method="get" class="cluster">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <select class="select select--auto" name="event" aria-label="Event"><option value="">Semua event</option>
+      {% for e in events %}<option value="{{ e.pk }}"{% if params.event == e.pk|stringformat:"d" %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>
+    <select class="select select--auto" name="key" aria-label="Jenis kabar"><option value="">Semua jenis</option>
+      {% for key, title in keys %}<option value="{{ key }}"{% if params.key == key %} selected{% endif %}>{{ title }}</option>{% endfor %}</select>
+    <button class="btn btn--secondary btn--sm" type="submit">Filter</button>
+  </form>
+
+  {% for row in rows %}{% with n=row.n %}
+    <article class="card inbox-item stack stack-sm">
+      <div class="cluster cluster-between">
+        <div><strong>{{ row.title }}</strong> · <a class="code" href="{% url 'dashboard:order_detail' n.order.code %}">{{ n.order.code }}</a>
+          <span class="text-small text-muted">· {{ n.order.buyer_name }} · <span class="num">{{ n.recipient }}</span> · {{ n.created_at|date:"j M H.i" }}</span></div>
+        {% if n.status != "PERLU_DIKIRIM" %}<span class="badge badge--{% if n.status == 'TERKIRIM' %}success{% elif n.status == 'GAGAL' %}danger{% else %}neutral{% endif %}">{{ n.get_status_display }}{% if n.sent_by %} · {{ n.sent_by.get_username }}{% endif %}</span>{% endif %}
+      </div>
+      <details class="inbox-item__text"><summary class="text-small">{{ n.rendered_text|truncatechars:110 }}</summary>
+        {% if n.status == "PERLU_DIKIRIM" %}
+          <form method="post" action="{% url 'dashboard:inbox_edit' n.pk %}" class="stack stack-sm mt-2">{% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <label class="visually-hidden" for="txt-{{ n.pk }}">Isi pesan</label>
+            <textarea class="textarea" id="txt-{{ n.pk }}" name="text" rows="8">{{ n.rendered_text }}</textarea>
+            <div><button class="btn btn--ghost btn--sm" type="submit">Simpan perubahan pesan</button></div>
+          </form>
+        {% else %}<pre class="msg-text">{{ n.rendered_text }}</pre>{% endif %}
+      </details>
+      {% if n.status == "PERLU_DIKIRIM" and n.channel == "WA" %}
+        <div class="cluster">
+          <a class="btn btn--primary btn--sm" href="{% url 'dashboard:inbox_send' n.pk %}" target="_blank" rel="noopener" x-data="sendNext" @click="reloadSoon">{% icon "chat" %}<span>Kirim WA</span></a>
+          <form method="post" action="{% url 'dashboard:inbox_skip' n.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button class="btn btn--ghost btn--sm" type="submit">Lewati</button></form>
+        </div>
+      {% endif %}
+    </article>
+  {% endwith %}{% empty %}
+    {% include "components/empty_state.html" with mascot="happy" title="Kotak kabar kosong" text="Tidak ada pesan untuk filter ini." %}
+  {% endfor %}
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="pager">{% if page.has_previous %}<a class="btn btn--ghost btn--sm" href="?tab={{ tab }}&amp;page={{ page.previous_page_number }}">←</a>{% endif %}
+      <span class="text-small">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a class="btn btn--ghost btn--sm" href="?tab={{ tab }}&amp;page={{ page.next_page_number }}">→</a>{% endif %}</nav>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{{ title }} — {{ order.code }}
+
+{{ text|safe }}
+
+—
+{{ brand }} · {{ tagline }}
+Email ini dikirim otomatis. Balas lewat WhatsApp admin bila ada pertanyaan.

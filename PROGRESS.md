@@ -13,9 +13,9 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 | 04 | Form pesanan | ✅ selesai | 2026-10-26 | Detail event, form 4 langkah multi-tiket, ringkasan live, halaman sukses; diuji di browser |
 | 05 | Lacak & pembayaran | ✅ selesai | 2026-10-26 | Lacak (kode+WA/token), upload bukti aman, berkas privat, batal, ubah pemegang, rekening refund |
 | 06 | Verifikasi & waiting list | ✅ selesai | 2026-10-26 | Daftar & detail pesanan, Lihat NIK (Owner), antrian verifikasi T/X/J/K, waiting list, hitung ulang, run_periodic |
-| 07 | Mode war & hasil | ⬜ belum | | |
-| 08 | Penyelesaian (refund, gelang, e-tiket) | ⬜ belum | | |
-| 09 | Kabar WA | ⬜ belum | | |
+| 07 | Mode war & hasil | ✅ selesai | 2026-10-26 | Mode War HP (1 ketukan/tiket, undo, konflik versi, refresh 15 dtk), VA admin & VA mandiri, lacak live |
+| 08 | Penyelesaian (refund, gelang, e-tiket) | ✅ selesai | 2026-10-26 | Antrian refund/kekurangan + bukti bertahap, penyerahan massal, e-tiket, ekspor Excel |
+| 09 | Kabar WA | ✅ selesai | 2026-10-26 | Kotak Kabar (wa.me), mode beruntun, kabar manual, edit template (Owner), email opsional, pengingat |
 | 10 | Rekap & ekspor promotor | ⬜ belum | | |
 | 11 | Testimoni, beranda, FAQ | ⬜ belum | | |
 | 12 | Keamanan & tugas harian | ⬜ belum | | |
@@ -25,6 +25,21 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catatan
 
 ## Hasil tes terakhir
+
+- **2026-10-26, fase 07+08+09** — pytest di MariaDB: **209 lulus, 0 gagal** (+23 tes: mulai war & isi hasil
+  via HTMX, undo, konflik versi admin lain, selesaikan war + tandai sisa gagal, filter, VA admin → lacak →
+  klaim → lunas, customer tidak melihat VA orang lain, VA mandiri on/off, VA kedaluwarsa, kabar pra-war
+  dibuang saat war; refund bertahap dengan bukti sampai Selesai (lebih dari saldo ditolak), ekspor refund
+  (rekening sebagai teks), kekurangan + ingatkan, penyerahan JASTIP massal Ditukar → Siap (wajib metode) →
+  Diserahkan + foto, info JASWAR + e-tiket diunduh customer, ekspor penyerahan; Kotak Kabar kirim → wa.me
+  & Terkirim, ubah/lewati, beruntun, kabar manual, pengingat tidak dobel, email locmem bila diaktifkan,
+  edit template + placeholder salah + reset default, Admin 403). pyflakes bersih.
+- **Uji browser** (Edge headless, 390px): mulai war dari modal → tombol hasil 1 ketukan → toast + undo
+  hitung mundur → undo → gagal → simpan VA → kartu menampilkan "Kirim WA"; lacak customer menampilkan VA +
+  polling 10 dtk → "Sudah saya bayar" → Mode War menampilkan klaim; refresh otomatis 15 dtk berjalan;
+  selesaikan war (sisa gagal) → antrian refund Rp400.000 & Rp1.000.000 (sesuai rumus) → penyerahan pilih
+  semua → Ditukar → Kotak Kabar & mode beruntun. Tidak ada error JS. Diperbaiki: form VA mandiri dilipat,
+  kabar pra-war basi dibuang saat war dimulai, judul topbar tidak lagi patah 2 baris di HP.
 
 - **2026-10-26, fase 05+06** — pytest di MariaDB: **186 lulus, 0 gagal** (+27 tes: akses lacak
   benar/salah/rate limit/token kedaluwarsa, customer A ≠ B (pesanan & berkas), upload palsu / >10 MB /
@@ -78,6 +93,26 @@ Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catata
 ## Pertanyaan terbuka
 
 (hal ambigu yang diputuskan sementara dengan `# ASUMSI:` — pemilik perlu mengonfirmasi)
+
+**Fase 07–09**
+
+33. **Undo hasil war 10 detik** di layar; setelah itu masih bisa "Ubah hasil" selama tahap berstatus War
+    (dan belum ada refund/penyerahan). Dua admin mengisi tiket yang sama → yang kedua ditolak (versi).
+34. **VA mandiri** (customer kirim VA sendiri) hanya untuk metode **titip bayar**, hanya saat war, dan bisa
+    dimatikan per event (`customer_va_enabled`). Klaim "sudah saya bayar" hanya penanda; Lunas ditandai admin.
+35. **Pengingat otomatis**: fee 3 jam sebelum batas, pelunasan 24 jam sebelum batas — **sekali** per pesanan.
+    Pengingat manual dari detail pesanan / Penyelesaian boleh berulang.
+36. **WA tetap manual** (tombol membuka wa.me dengan pesan siap kirim, lalu ditandai Terkirim). Gateway WA
+    berbayar belum dipakai (`HttpWhatsAppGatewayBackend` hanya kerangka). **Email mati secara default**; bila
+    diaktifkan di Pengaturan, terkirim otomatis untuk template yang dicentang "kirim email" (VA hanya WA).
+37. Saat **war dimulai**, kabar pra-war yang **belum** dikirim (siap war, tagihan, pengingat, fee diterima)
+    dibuang agar Kotak Kabar tidak berisi pesan basi. Yang sudah terkirim tetap di riwayat.
+38. **Admin** (bukan hanya Owner) melihat nomor rekening refund lengkap di Penyelesaian & ekspor Excel,
+    karena Admin yang mentransfer; setiap tampilan/ekspor dicatat di log aktivitas.
+39. Penyerahan: **e-tiket hanya bisa dilampirkan bila 1 tiket dipilih**; foto serah terima massal disalin ke
+    setiap tiket. "Siap diserahkan" wajib metode (COD/titik temu/kirim), "Diserahkan" wajib nama penerima.
+40. **Edit template pesan hanya Owner**; template yang sudah diubah tidak ditimpa `seed_initial`, ada tombol
+    "Kembalikan ke default". Placeholder tak dikenal hanya diperingatkan (tetap boleh disimpan).
 
 **Fase 05–06**
 
@@ -151,6 +186,24 @@ dev: pytest 9.1.1, pytest-django 4.14.0, freezegun 1.5.5.
 Vendor JS: htmx 2.0.11, `@alpinejs/csp` 3.17.4. Font: Fredoka & Nunito (variable, latin + latin-ext, OFL).
 
 ## Catatan untuk fase berikutnya
+
+**Dari fase 07–09:**
+
+- **Mode War**: `/kelola/war/<phase>/` (`apps/dashboard/views_war.py`, `templates/dashboard/war/`). Kartu per
+  pesanan dirender ulang lewat HTMX (`hx-target="closest .war-order"`); `warRefresh` (Alpine) memuat ulang
+  `#war-list` tiap 15 dtk kecuali ada input aktif / `<details>` terbuka / undo berjalan.
+- **VA**: `orders/services/va.py` (`create_va_notice`, `claim_va_paid`, `mark_va_paid`, `expire_vas`).
+  Lacak customer melakukan polling diri sendiri (`hx-select="#live"` + `hx-select-oob="#tiket-live"`) saat war.
+- **Penyelesaian**: `views_settlement.py` (refund/kekurangan, penyerahan massal). Antrian di
+  `orders/selectors.py` (`refund_queue`, `shortfall_queue`, `handover_slots`).
+- **Excel**: `apps/exports/excel.py` → `build_workbook(sheets)` / `xlsx_response(name, sheets)`; sheet =
+  `(judul, header, rows, text_cols)`. Kolom teks diformat `@` (nol di depan aman). **Pakai ulang di fase 10.**
+- **Kabar**: `notifications/services.py` (`enqueue`, `enqueue_manual`, `discard_pending`, `mark_sent`,
+  `mark_skipped`, `update_text`, `preview`, `unknown_placeholders`); backend di `notifications/backends.py`.
+  Email dikirim di `transaction.on_commit` → di tes pakai `django_capture_on_commit_callbacks(execute=True)`.
+  Teks kabar manual per pesanan: `guidance.MANUAL_MESSAGE_KEYS` + `message_extra(order, key)`.
+- `run_periodic` kini juga: pengingat fee/pelunasan & VA kedaluwarsa (tetap idempoten).
+- Filter template `urlencode_dict` (`{% load ui %}`) untuk mempertahankan query filter di link.
 
 **Dari fase 05–06:**
 

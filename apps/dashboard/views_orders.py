@@ -16,6 +16,7 @@ from apps.core import audit
 from apps.core.crypto import digits_only, nik_hash
 from apps.core.enums import (
     PRE_WAR_STATUSES,
+    NotificationChannel,
     CancelReason,
     OrderStatus,
     PaymentStatus,
@@ -26,6 +27,7 @@ from apps.core.forms import DateInput, RupiahField, StyledFormMixin
 from apps.core.models import AuditLog, BankAccount
 from apps.core.uploads import ACCEPT_ATTR, process_private_upload
 from apps.events.models import Event, SalePhase
+from apps.notifications.defaults import DEFAULT_TEMPLATES
 from apps.orders.models import Order, OrderLine, OrderTimeline
 from apps.orders.selectors import order_detail_qs
 from apps.orders.services import codes, guidance, settlement, transitions, updates
@@ -200,6 +202,8 @@ def order_detail(request, code, *, payment_form=None, note_form=None, line_forms
         "payment_form": payment_form,
         "note_form": note_form or NoteForm(initial={"note": order.admin_note}),
         "pending_count": sum(1 for p in payments if p.status == PaymentStatus.MENUNGGU),
+        "notifications": list(order.notifications.filter(channel=NotificationChannel.WA).order_by("-created_at")[:20]),
+        "message_keys": [(k, DEFAULT_TEMPLATES[k][0]) for k in guidance.MANUAL_MESSAGE_KEYS],
     }, active="orders")
 
 

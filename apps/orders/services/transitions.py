@@ -35,7 +35,7 @@ from apps.core.enums import (
 )
 from apps.core.money import format_rupiah
 from apps.notifications import services as notify
-from apps.notifications.defaults import RESULT_KEYS
+from apps.notifications.defaults import PRE_WAR_KEYS, RESULT_KEYS
 
 from ..models import Order, OrderLine, OrderTimeline, Payment, TicketSlot
 from . import codes, quota, settlement
@@ -537,6 +537,8 @@ def start_war(phase, *, actor: Actor, now=None) -> WarStart:
     for order in Order.objects.select_for_update().filter(phase=phase, status=S.SIAP_WAR).order_by("created_at"):
         _change_status(order, S.PROSES_WAR, actor=actor, title="War dimulai",
                        message="Tim kami sedang berjuang untuk tiketmu. Pantau halaman ini ya!")
+        # ASUMSI: kabar pra-war yang belum terkirim sudah basi → dibuang (yang terkirim tetap jadi riwayat)
+        notify.discard_pending(order, PRE_WAR_KEYS)
         started.append(order.code)
     not_ready = list(Order.objects.filter(phase=phase, status__in=PAYMENT_STAGE)
                      .order_by("created_at").values_list("code", flat=True))

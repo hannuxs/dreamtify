@@ -1,0 +1,27 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Kirim beruntun{% endblock %}
+{% block page_title %}Kirim beruntun{% endblock %}
+
+{% block content %}
+<div class="stack narrow sequence">
+  <a class="back-link" href="{% url 'dashboard:inbox' %}">← Kotak Kabar</a>
+  {% if current %}
+    <p class="text-small text-muted">Sisa <strong>{{ remaining }}</strong> pesan. Tekan "Kirim &amp; lanjut": WhatsApp terbuka di tab baru, halaman ini pindah ke pesan berikutnya.</p>
+    <article class="card card--sticker stack">
+      <p class="eyebrow">{{ title }}</p>
+      <h1 class="page-title"><a class="code" href="{% url 'dashboard:order_detail' current.order.code %}">{{ current.order.code }}</a></h1>
+      <p><strong>{{ current.order.buyer_name }}</strong> · <span class="num">{{ current.recipient }}</span></p>
+      <pre class="msg-text">{{ current.rendered_text }}</pre>
+      <a class="btn btn--primary btn--lg btn--block" href="{% url 'dashboard:inbox_send' current.pk %}" target="_blank" rel="noopener"
+         x-data="sendNext" @click="reloadSoon">{% icon "chat" %}<span>Kirim &amp; lanjut</span></a>
+      <form method="post" action="{% url 'dashboard:inbox_skip' current.pk %}">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ self_url }}">
+        <button class="btn btn--ghost btn--block" type="submit">Lewati pesan ini</button></form>
+    </article>
+  {% else %}
+    {% include "components/empty_state.html" with mascot="happy" title="Semua kabar terkirim 🎉" text="Tidak ada pesan WA yang menunggu dikirim." action_label="Kembali ke Kotak Kabar" action_href="/kelola/kabar/" %}
+  {% endif %}
+</div>
+{% endblock %}

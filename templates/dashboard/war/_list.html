@@ -1,0 +1,44 @@
+{% load ui %}<div id="war-list" class="stack">
+  <div class="war-stats">
+    <div><span class="num">{{ counts.total }}</span><small>tiket</small></div>
+    <div class="is-ok"><span class="num">{{ counts.secured }}</span><small>dapat</small></div>
+    <div class="is-fail"><span class="num">{{ counts.failed }}</span><small>gagal</small></div>
+    <div class="is-wait"><span class="num">{{ counts.pending }}</span><small>belum</small></div>
+  </div>
+
+  {% if not_ready %}
+    <details class="alert alert--warning war-warn"><summary>{% icon "alert" %} {{ not_ready|length }} pesanan belum siap war (belum lunas) — tidak ikut</summary>
+      <p class="text-small mt-2">{% for code, status in not_ready %}<a href="{% url 'dashboard:order_detail' code %}">{{ code }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p></details>
+  {% endif %}
+
+  {% if customer_vas %}
+    <section class="card stack war-cva" aria-labelledby="cva">
+      <h2 id="cva" class="card__title">VA dari customer (war mandiri) — bayarkan</h2>
+      {% for v in customer_vas %}
+        <div class="copy-row">
+          <div><div class="text-small"><a href="{% url 'dashboard:order_detail' v.order.code %}">{{ v.order.code }}</a> · {{ v.bank }} · {{ v.amount|rupiah }}{% if v.expires_at %} · sebelum {{ v.expires_at|date:"H.i" }}{% endif %}</div>
+            <div class="copy-row__value num">{{ v.va_number }}</div>
+            {% if v.screenshot %}<a class="text-small" href="{% url 'public:private_file' 'va' v.pk %}" target="_blank" rel="noopener">Lihat screenshot</a>{% endif %}</div>
+          <div class="cluster">
+            {% include "components/copy_button.html" with value=v.va_number label="Salin" %}
+            <form method="post" action="{% url 'dashboard:war_va_paid' v.pk %}">{% csrf_token %}<button class="btn btn--primary btn--sm" type="submit">Sudah dibayar tim</button></form>
+          </div>
+        </div>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  <nav class="filter-chips" aria-label="Filter">
+    {% for key, label in filters %}<a href="?f={{ key }}"{% if flt == key %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+  </nav>
+
+  {% if phase.status != "WAR" and phase.status != "SELESAI" %}
+    <p class="alert alert--info">{% icon "info" %}<span>{{ siap_count }} pesanan siap war. Tombol hasil aktif setelah <strong>Mulai war</strong>.</span></p>
+  {% endif %}
+
+  {% for card in cards %}
+    {% include "dashboard/war/_order_card.html" with order=card.order lines=card.lines categories=card.categories vas=card.vas is_va=card.is_va can_edit=card.can_edit va_form=card.va_form undo_slot=card.undo_slot undo_until=card.undo_until %}
+  {% empty %}
+    {% include "components/empty_state.html" with mascot="sleep" title="Tidak ada pesanan" text="Belum ada pesanan untuk filter ini." %}
+  {% endfor %}
+</div>

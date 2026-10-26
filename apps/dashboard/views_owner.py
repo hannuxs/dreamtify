@@ -13,6 +13,9 @@ from django.utils import timezone
 
 from apps.core import audit
 from apps.core.models import AuditLog, BankAccount, FaqItem, SiteSetting
+from apps.notifications.defaults import DEFAULT_TEMPLATES
+from apps.notifications.models import MessageTemplate
+from apps.notifications.services import unknown_placeholders
 
 from .forms import (
     AuditFilterForm,
@@ -57,6 +60,15 @@ def _setting_forms(request, tab, bound):
         return {"formset": BankAccountFormSet(data, queryset=BankAccount.objects.all(), prefix="bank")}
     if tab == "faq":
         return {"formset": FaqFormSet(data, queryset=FaqItem.objects.all(), prefix="faq")}
+    if tab == "template":
+        saved = {tpl.key: tpl for tpl in MessageTemplate.objects.all()}
+        rows = []
+        for key, (title, body, _) in DEFAULT_TEMPLATES.items():
+            tpl = saved.get(key)
+            rows.append({"key": key, "title": tpl.title if tpl else title, "active": tpl.is_active if tpl else True,
+                         "customized": bool(tpl and tpl.is_customized),
+                         "unknown": unknown_placeholders(tpl.body if tpl else body)})
+        return {"templates": rows}
     return {}
 
 

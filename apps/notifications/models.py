@@ -47,3 +47,12 @@ class Notification(TimeStampedModel):
 
     def __str__(self):
         return f"{self.order_id} {self.template_key} {self.channel}"
+
+    @property
+    def template_title(self) -> str:
+        from .defaults import DEFAULT_TEMPLATES
+
+        tpl = MessageTemplate.objects.filter(key=self.template_key).only("title").first()
+        if tpl:
+            return tpl.title
+        return DEFAULT_TEMPLATES.get(self.template_key, (self.template_key,))[0]

@@ -16,6 +16,8 @@
     <span class="badge badge--{{ order.status|status_tone }}">{{ order.get_status_display }}</span>
   </header>
 
+  {# Area live: dipolling tiap 10 detik selama war (status, VA, tiket diganti via hx-select / hx-select-oob) #}
+  <div id="live" class="stack stack-lg"{% if live_polling %} hx-get="{{ request.path }}" hx-trigger="every 10s" hx-select="#live" hx-select-oob="#tiket-live" hx-swap="outerHTML"{% endif %}>
   <section class="card card--sticker action action--{{ action.tone }}" aria-labelledby="aksi">
     <p class="eyebrow">Yang perlu kamu lakukan sekarang</p>
     <h2 id="aksi" class="action__title">{{ action.title }}</h2>
@@ -35,10 +37,14 @@
           {% include "components/copy_button.html" with value=va.va_number label="Salin VA" toast="Nomor VA tersalin ✓" %}
         </div>
         {% if va.expires_at %}{% include "components/countdown.html" with target=va.expires_at prefix="Bayar dalam" done="Lewat batas" %}{% endif %}
-        {% if va.status == "DIKLAIM_CUSTOMER" %}<p class="badge badge--info">Kamu sudah konfirmasi bayar — kami cek</p>{% endif %}
+        {% if va.status == "DIKLAIM_CUSTOMER" %}<p class="badge badge--info">Kamu sudah konfirmasi bayar — kami cek</p>
+        {% else %}<form method="post" action="{% url 'public:track_va_claim' order.code va.pk %}">{% csrf_token %}
+          <button class="btn btn--primary btn--block" type="submit">{% icon "check" %}<span>Sudah saya bayar</span></button></form>{% endif %}
       {% endfor %}
+      <p class="text-small">Telat bayar = tiket hangus &amp; fee tidak kembali. Bayar lewat m-banking/ATM ke nomor VA di atas.</p>
     </section>
   {% endif %}
+  </div>
 
   {# 3. Tagihan + upload #}
   {% if due and pay_form %}
@@ -97,7 +103,25 @@
   {% endif %}
 
   {# 4. Tiket #}
-  <section class="stack" aria-labelledby="tiket">
+  {% if va_form or my_vas %}
+    <section class="card stack" aria-labelledby="va-mandiri">
+      <h2 id="va-mandiri" class="card__title">Sudah secured sendiri? Kirim VA-mu</h2>
+      <p class="text-small text-muted">Kalau kamu war sendiri dan lebih dulu dapat tiket, kirim VA-nya. Tim membayarkan dari uang titipanmu.</p>
+      {% for v in my_vas %}<p class="text-small">{{ v.bank }} <span class="num">{{ v.va_number }}</span> · {{ v.amount|rupiah }} — <span class="badge badge--{% if v.status == 'LUNAS' %}success{% else %}info{% endif %}">{% if v.status == "LUNAS" %}Sudah dibayar tim{% else %}Menunggu dibayar tim{% endif %}</span></p>{% endfor %}
+      {% if va_form %}
+        <details{% if va_form.is_bound %} open{% endif %}>
+          <summary class="fw-bold">Isi data VA</summary>
+          <form method="post" action="{% url 'public:track_va_mandiri' order.code %}" enctype="multipart/form-data" class="stack" novalidate>{% csrf_token %}
+            {% include "components/form_errors.html" with form=va_form %}
+            <div class="form-grid">{% for field in va_form %}{% include "components/field.html" with field=field %}{% endfor %}</div>
+            <button class="btn btn--secondary" type="submit">Kirim VA</button>
+          </form>
+        </details>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <section class="stack" id="tiket-live" aria-labelledby="tiket">
     <h2 id="tiket">Tiket kamu</h2>
     {% for line in order.lines.all %}
       <article class="card stack ticket-card">

@@ -1,0 +1,59 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Penyelesaian{% endblock %}
+{% block page_title %}Penyelesaian{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <h1 class="page-title">Penyelesaian</h1>
+    <form method="get" class="cluster">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <select class="select" name="event" aria-label="Filter event"><option value="">Semua event</option>
+        {% for e in events %}<option value="{{ e.pk }}"{% if event and event.pk == e.pk %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>
+      <button class="btn btn--secondary btn--sm" type="submit">Filter</button>
+      {% if tab == "refund" %}<a class="btn btn--ghost btn--sm" href="{% url 'dashboard:refund_export' %}{% if event %}?event={{ event.pk }}{% endif %}">{% icon "download" %}<span>Excel refund</span></a>{% endif %}
+    </form>
+  </div>
+  <nav class="tabs" aria-label="Jenis">
+    <a class="tabs__item{% if tab == 'refund' %} is-active{% endif %}" href="?tab=refund{% if event %}&amp;event={{ event.pk }}{% endif %}">Refund</a>
+    <a class="tabs__item{% if tab == 'kekurangan' %} is-active{% endif %}" href="?tab=kekurangan{% if event %}&amp;event={{ event.pk }}{% endif %}">Kekurangan</a>
+  </nav>
+  <p class="text-small text-muted">{{ rows|length }} pesanan · total {{ total|rupiah }}</p>
+
+  {% for order, summary, form in rows %}
+    <article class="card stack">
+      <div class="cluster cluster-between">
+        <div><a class="code" href="{% url 'dashboard:order_detail' order.code %}">{{ order.code }}</a> · <strong>{{ order.buyer_name }}</strong>
+          <span class="text-small text-muted">· {{ order.event.name }} – {{ order.phase.name }}</span></div>
+        <div class="cluster"><span class="badge badge--{{ order.status|status_tone }}">{{ order.get_status_display }}</span>
+          <strong class="money">{% if tab == "refund" %}{{ summary.refund_due|rupiah }}{% else %}{{ summary.shortfall|rupiah }}{% endif %}</strong></div>
+      </div>
+      {% if tab == "refund" %}
+        {% if order.refund_account_number %}
+          <div class="copy-row"><div><div class="text-small text-muted">{{ order.refund_bank_name }} a.n. {{ order.refund_account_holder }}</div>
+            <div class="copy-row__value num">{{ order.refund_account_number }}</div></div>
+            {% include "components/copy_button.html" with value=order.refund_account_number label="Salin rekening" %}</div>
+        {% else %}
+          <div class="cluster"><span class="badge badge--warning">Menunggu customer mengisi rekening</span>
+            <form method="post" action="{% url 'dashboard:remind' order.code 'rekening' %}">{% csrf_token %}<button class="btn btn--ghost btn--sm" type="submit">{% icon "chat" %}<span>Ingatkan isi rekening</span></button></form></div>
+        {% endif %}
+        {% if summary.refunded %}<p class="text-small text-muted">Sudah direfund {{ summary.refunded|rupiah }} sebelumnya.</p>{% endif %}
+        <details{% if order.refund_account_number %} open{% endif %}>
+          <summary class="fw-bold text-small">Catat refund yang sudah ditransfer</summary>
+          <form method="post" action="{% url 'dashboard:refund_record' order.code %}" enctype="multipart/form-data" class="stack mt-2" novalidate>{% csrf_token %}
+            <div class="form-grid">{% for field in form %}{% include "components/field.html" with field=field %}{% endfor %}</div>
+            <div><button class="btn btn--primary btn--sm" type="submit">Simpan refund</button></div>
+          </form>
+        </details>
+      {% else %}
+        <p class="text-small">Dibayar {{ summary.paid_in|rupiah }} · tagihan final {{ summary.final_due|rupiah }}</p>
+        <form method="post" action="{% url 'dashboard:remind' order.code 'kekurangan' %}">{% csrf_token %}<button class="btn btn--ghost btn--sm" type="submit">{% icon "chat" %}<span>Kirim kabar kekurangan</span></button></form>
+      {% endif %}
+    </article>
+  {% empty %}
+    {% include "components/empty_state.html" with mascot="happy" title="Tidak ada antrian" text="Semua refund/kekurangan sudah beres untuk filter ini." %}
+  {% endfor %}
+</div>
+{% endblock %}

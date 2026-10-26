@@ -1,0 +1,30 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Template {{ tpl.key }}{% endblock %}
+{% block page_title %}Template pesan{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <a class="back-link" href="{% url 'dashboard:settings_tab' 'template' %}">← Semua template</a>
+  <div class="page-head"><h1 class="page-title">{{ tpl.title }}</h1><code>{{ tpl.key }}</code></div>
+  {% if email_only %}<p class="alert alert--info">{% icon "info" %}<span>Template ini hanya dikirim lewat email (customer sudah melihat halaman sukses).</span></p>{% endif %}
+  {% if unknown %}<p class="alert alert--danger">{% icon "alert" %}<span>Placeholder tak dikenal: {% for p in unknown %}<code>{{ "{" }}{{ p }}{{ "}" }}</code>{% if not forloop.last %}, {% endif %}{% endfor %} — tidak akan diganti otomatis.</span></p>{% endif %}
+  <div class="edit-layout">
+    <form method="post" class="card stack edit-layout__main" novalidate>{% csrf_token %}
+      {% include "components/form_errors.html" %}
+      {% for field in form %}{% include "components/field.html" with field=field %}{% endfor %}
+      <p class="text-small text-muted">Placeholder: {% for p in known %}<code>{{ "{" }}{{ p }}{{ "}" }}</code> {% endfor %}</p>
+      <div class="cluster form-actions">
+        <button class="btn btn--primary" type="submit">Simpan</button>
+        <button class="btn btn--ghost" type="submit" name="action" value="default" formnovalidate>Kembalikan default</button>
+      </div>
+    </form>
+    <aside class="card stack edit-layout__side">
+      <h2 class="card__title">Pratinjau</h2>
+      <p class="text-small text-muted">Dengan data contoh (simpan untuk memperbarui).</p>
+      <pre class="msg-text msg-text--bubble">{{ preview }}</pre>
+    </aside>
+  </div>
+</div>
+{% endblock %}

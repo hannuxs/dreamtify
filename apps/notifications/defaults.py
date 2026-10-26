@@ -165,3 +165,6 @@ EMAIL_ONLY_KEYS = {"PESANAN_DIBUAT", "WAITING_LIST_MASUK"}
 # Mendesak → hanya WA
 WA_ONLY_KEYS = {"VA_DIKIRIM"}
 RESULT_KEYS = {"HASIL_SECURED", "HASIL_SEBAGIAN", "HASIL_GAGAL"}
+# Basi begitu war dimulai → kabar yang belum terkirim dibuang agar Kotak Kabar tidak menumpuk
+PRE_WAR_KEYS = {"WAITING_LIST_MASUK", "WAITING_LIST_NAIK", "PENGINGAT_FEE", "FEE_DITERIMA", "BUKTI_DITOLAK",
+                "TAGIHAN_PELUNASAN", "PENGINGAT_PELUNASAN", "SIAP_WAR"}

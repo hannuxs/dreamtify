@@ -39,6 +39,17 @@ def wa_link(number, text=""):
 
 
 @register.filter
+def urlencode_dict(mapping):
+    """{{ params|urlencode_dict }} → event=1&key=X"""
+    from urllib.parse import urlencode
+
+    try:
+        return urlencode(mapping)
+    except TypeError:
+        return ""
+
+
+@register.filter
 def get_item(mapping, key):
     """{{ dict|get_item:key }}"""
     try:

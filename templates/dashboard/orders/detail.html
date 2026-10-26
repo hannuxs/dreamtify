@@ -146,6 +146,28 @@
         {% endif %}
       </section>
 
+      <section class="card stack" id="kabar" aria-labelledby="kabar-title">
+        <h2 id="kabar-title" class="card__title">Kabar WhatsApp</h2>
+        {% if notifications %}
+          <ul class="pay-list">
+            {% for n in notifications %}
+              <li><div class="cluster cluster-between"><strong>{{ n.template_key }}</strong>
+                <span class="badge badge--{% if n.status == 'TERKIRIM' %}success{% elif n.status == 'PERLU_DIKIRIM' %}warning{% else %}neutral{% endif %}">{{ n.get_status_display }}</span></div>
+                <span class="text-small text-muted">{{ n.created_at|date:"j M H.i" }} · {{ n.rendered_text|truncatechars:90 }}</span>
+                {% if n.status == "PERLU_DIKIRIM" %}<div class="cluster">
+                  <a class="btn btn--primary btn--sm" href="{% url 'dashboard:inbox_send' n.pk %}" target="_blank" rel="noopener" x-data="sendNext" @click="reloadSoon">{% icon "chat" %}<span>Kirim WA</span></a>
+                  <form method="post" action="{% url 'dashboard:inbox_skip' n.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}#kabar"><button class="btn btn--ghost btn--sm" type="submit">Lewati</button></form></div>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}<p class="text-small text-muted">Belum ada kabar WA untuk pesanan ini.</p>{% endif %}
+        <form method="post" action="{% url 'dashboard:order_message' order.code %}" class="cluster">{% csrf_token %}
+          <label class="visually-hidden" for="kabar-key">Jenis kabar</label>
+          <select class="select select--auto" id="kabar-key" name="key">{% for key, title in message_keys %}<option value="{{ key }}">{{ title }}</option>{% endfor %}</select>
+          <button class="btn btn--secondary btn--sm" type="submit">Buat kabar</button>
+        </form>
+      </section>
+
       <section class="card stack" aria-labelledby="riwayat">
         <h2 id="riwayat" class="card__title">Riwayat</h2>
         <ol class="timeline">
