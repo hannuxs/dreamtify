@@ -28,3 +28,22 @@ def tracking_path(order) -> str:
 
 def tracking_url(order) -> str:
     return settings.SITE_URL + tracking_path(order)
+
+
+def _file_salt(event) -> str:
+    # Tanda tangan ikut mati bila link promotor diganti (token baru)
+    return f"dreamtify.berkas.promotor:{event.promotor_token}"
+
+
+def promotor_file_signature(event, kind: str, pk: int) -> str:
+    """Tanda tangan link berkas untuk ekspor promotor (docs/07 §3)."""
+    return signing.dumps(f"{kind}:{pk}", salt=_file_salt(event), compress=True)
+
+
+def check_promotor_file_signature(event, kind: str, pk: int, signature: str) -> bool:
+    if not signature or not event.promotor_link_enabled:
+        return False
+    try:
+        return signing.loads(signature, salt=_file_salt(event)) == f"{kind}:{pk}"
+    except signing.BadSignature:
+        return False

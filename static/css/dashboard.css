@@ -199,3 +199,56 @@ input.money { text-align: right; font-variant-numeric: tabular-nums; }
 .login__logo { width: 180px; margin: 0 auto; }
 .login__title { font-size: 1.5rem; text-align: center; }
 .login__card > .text-muted { text-align: center; }
+
+/* --- Pesanan --- */
+.filter-panel > summary { cursor: pointer; display: flex; gap: var(--sp-2); align-items: center; }
+.num-col { text-align: right; }
+.orders-table td { font-size: var(--fs-small); }
+.orders-table .badge { font-size: var(--fs-xs); padding: 2px 8px; }
+.kv { display: grid; gap: 6px var(--sp-4); }
+.kv div { display: grid; grid-template-columns: 130px 1fr; gap: var(--sp-3); font-size: var(--fs-small); }
+.kv dt { color: var(--ink-600); font-weight: 700; }
+.kv dd { margin: 0; font-weight: 600; word-break: break-word; }
+.slot-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.slot-list li { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.text-danger { color: var(--danger); }
+.text-success { color: var(--success); }
+.nik-full { font-weight: 800; letter-spacing: 0.04em; background: var(--warning-bg); padding: 2px 6px; border-radius: 6px; }
+kbd { font-family: var(--font-body); font-size: 0.75em; font-weight: 800; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid currentColor; opacity: 0.8; }
+.timeline { list-style: none; padding: 0 0 0 var(--sp-5); position: relative; display: flex; flex-direction: column; gap: var(--sp-3); }
+.timeline::before { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+.timeline li { position: relative; display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-small); }
+.timeline li::before { content: ""; position: absolute; left: calc(var(--sp-5) * -1); top: 4px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--white); border: 3px solid var(--sky-400); }
+.timeline__when { font-size: var(--fs-xs); color: var(--ink-600); font-weight: 700; }
+
+/* --- Verifikasi --- */
+.verify { display: grid; gap: var(--sp-4); align-items: start; }
+@media (min-width: 1024px) { .verify { grid-template-columns: minmax(0, 1fr) 300px; } .verify__list { position: sticky; top: 76px; } }
+.verify__list { padding: var(--sp-2); max-height: 80vh; overflow-y: auto; }
+.verify__list ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.verify__list a { display: flex; flex-direction: column; padding: var(--sp-2) var(--sp-3); border-radius: 12px; color: var(--navy-900); text-decoration: none; }
+.verify__list a:hover { background: var(--cloud-100); }
+.verify__list a[aria-current] { background: var(--navy-900); color: var(--white); }
+.verify__list a[aria-current] .text-muted { color: var(--cloud-200); }
+.proof { display: flex; flex-direction: column; gap: var(--sp-2); }
+.proof__frame { display: grid; place-items: center; min-height: 240px; max-height: 60vh; overflow: hidden; border-radius: 14px;
+  background: var(--cloud-100); border: 1px solid var(--line); }
+.proof__frame.is-zoomed { max-height: none; overflow: auto; place-items: start; }
+.proof__frame img { max-height: 58vh; width: auto; transition: transform var(--dur) var(--ease); }
+.proof__frame.is-zoomed img { max-height: none; max-width: none; width: 160%; }
+.proof__frame img.rot-90 { transform: rotate(90deg); }
+.proof__frame img.rot-180 { transform: rotate(180deg); }
+.proof__frame img.rot-270 { transform: rotate(270deg); }
+.verify__actions { display: grid; gap: var(--sp-4); }
+@media (min-width: 640px) { .verify__actions { grid-template-columns: 1fr 1fr; align-items: end; } }
+.chip--button { border: 1px solid var(--line); cursor: pointer; font-family: inherit; }
+.chip--button:hover { border-color: var(--navy-900); }
+
+/* --- Waiting list --- */
+.queue { padding-left: 1.4em; display: flex; flex-direction: column; gap: var(--sp-3); }
+.queue li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding-bottom: var(--sp-3); border-bottom: 1px dashed var(--line); }
+.queue li:last-child { border-bottom: 0; }
+.page-head form.cluster .select { width: auto; min-height: 40px; }

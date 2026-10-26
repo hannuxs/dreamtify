@@ -1,0 +1,213 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}Pesanan {{ order.code }} — {{ brand.name }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/order.css' %}"><meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="container container-narrow track stack stack-lg">
+  {# 1. Status + aksi #}
+  <header class="track__head">
+    <p class="eyebrow">{{ order.event.name }} · {{ order.phase.name }}</p>
+    <div class="cluster">
+      <h1 class="code track__code">{{ order.code }}</h1>
+      {% include "components/copy_button.html" with value=order.code label="Salin" toast="Kode tersalin ✓" %}
+    </div>
+    <span class="badge badge--{{ order.status|status_tone }}">{{ order.get_status_display }}</span>
+  </header>
+
+  <section class="card card--sticker action action--{{ action.tone }}" aria-labelledby="aksi">
+    <p class="eyebrow">Yang perlu kamu lakukan sekarang</p>
+    <h2 id="aksi" class="action__title">{{ action.title }}</h2>
+    <p>{{ action.text }}</p>
+    {% if action.action == "upload" %}<a class="btn btn--primary" href="#bayar">{% icon "upload" %}<span>Upload bukti transfer</span></a>
+    {% elif action.action == "refund_account" %}<a class="btn btn--primary" href="#refund">{% icon "receipt" %}<span>Isi rekening refund</span></a>
+    {% elif action.action == "va" %}<a class="btn btn--primary" href="#va">{% icon "bolt" %}<span>Lihat VA</span></a>{% endif %}
+  </section>
+
+  {# 2. Banner VA (aktif penuh di fase Mode War) #}
+  {% if active_va %}
+    <section id="va" class="card va-banner stack" aria-labelledby="va-title">
+      <h2 id="va-title" class="card__title">{% icon "bolt" %} VA untuk tiketmu</h2>
+      {% for va in active_va %}
+        <div class="copy-row">
+          <div><div class="text-small">{{ va.bank }} · {{ va.amount|rupiah }}</div><div class="copy-row__value num">{{ va.va_number }}</div></div>
+          {% include "components/copy_button.html" with value=va.va_number label="Salin VA" toast="Nomor VA tersalin ✓" %}
+        </div>
+        {% if va.expires_at %}{% include "components/countdown.html" with target=va.expires_at prefix="Bayar dalam" done="Lewat batas" %}{% endif %}
+        {% if va.status == "DIKLAIM_CUSTOMER" %}<p class="badge badge--info">Kamu sudah konfirmasi bayar — kami cek</p>{% endif %}
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {# 3. Tagihan + upload #}
+  {% if due and pay_form %}
+    <section id="bayar" class="card stack" aria-labelledby="tagihan" {% if due.full_amount %}x-data="payChoice"{% endif %}>
+      <h2 id="tagihan" class="card__title">Tagihan: {{ due.label|lower }}</h2>
+      {% if due.full_amount %}
+        <div class="segmented" role="radiogroup" aria-label="Pilih nominal">
+          <label><input type="radio" name="bayar" value="fee" x-model="choice"><span>Fee saja</span></label>
+          <label><input type="radio" name="bayar" value="full" x-model="choice"><span>Sekaligus</span></label>
+        </div>
+        <div class="copy-row" x-show="isFee"><div><div class="text-small text-muted">Fee jasa</div><div class="copy-row__value">{{ due.amount|rupiah }}</div></div>
+          {% include "components/copy_button.html" with value=due.amount|stringformat:"d" label="Salin angka" toast="Nominal tersalin ✓" %}</div>
+        <div class="copy-row" x-show="isFull" x-cloak><div><div class="text-small text-muted">Fee + pelunasan</div><div class="copy-row__value">{{ due.full_amount|rupiah }}</div></div>
+          {% include "components/copy_button.html" with value=due.full_amount|stringformat:"d" label="Salin angka" toast="Nominal tersalin ✓" %}</div>
+      {% else %}
+        <div class="copy-row"><div><div class="text-small text-muted">{{ due.label }}</div><div class="copy-row__value">{{ due.amount|rupiah }}</div></div>
+          {% include "components/copy_button.html" with value=due.amount|stringformat:"d" label="Salin angka" toast="Nominal tersalin ✓" %}</div>
+      {% endif %}
+      {% if due.deadline %}<div class="cluster"><span class="text-small">Batas: <strong>{{ due.deadline|date:"D, j M Y H.i" }} WIB</strong></span>
+        {% include "components/countdown.html" with target=due.deadline prefix="Sisa" done="Lewat batas" %}</div>{% endif %}
+      <details class="accounts"{% if not due_covered %} open{% endif %}>
+        <summary class="fw-bold">Rekening tujuan</summary>
+        {% for acc in accounts %}
+          <div class="copy-row mt-2"><div><div class="text-small text-muted">{{ acc.bank_name }} a.n. {{ acc.account_holder }}</div><div class="copy-row__value num">{{ acc.account_number }}</div></div>
+            {% include "components/copy_button.html" with value=acc.account_number label="Salin nomor" toast="Nomor rekening tersalin ✓" %}</div>
+        {% endfor %}
+      </details>
+      {% if due_covered and not pay_form.is_bound %}
+        <p class="alert alert--info">{% icon "info" %}<span>Bukti {{ summary.pending_in|rupiah }} sedang kami cek. Tidak perlu upload lagi.</span></p>
+        <details><summary class="text-small fw-bold">Upload bukti lain (mis. transfer kedua)</summary>
+          <div class="mt-4">{% include "public/_payment_form.html" %}</div></details>
+      {% else %}
+        <h3 class="text-small fw-bold">Sudah transfer? Upload buktinya:</h3>
+        {% include "public/_payment_form.html" %}
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if incoming %}
+    <section class="card stack" aria-labelledby="riwayat-bayar">
+      <h2 id="riwayat-bayar" class="card__title">Pembayaranmu</h2>
+      <ul class="pay-list">
+        {% for p in incoming %}
+          <li>
+            <div class="cluster cluster-between">
+              <strong>{{ p.get_kind_display }} · {{ p.amount_claimed|rupiah }}</strong>
+              <span class="badge badge--{% if p.status == 'DITERIMA' %}success{% elif p.status == 'DITOLAK' %}danger{% else %}info{% endif %}">{{ p.get_status_display }}</span>
+            </div>
+            <span class="text-small text-muted">{{ p.created_at|date:"j M Y H.i" }}{% if p.status == "DITERIMA" and p.amount_received != p.amount_claimed %} · diterima {{ p.amount_received|rupiah }}{% endif %}</span>
+            {% if p.status == "DITOLAK" %}<span class="text-small text-pink">Alasan: {{ p.reject_reason }}</span>{% endif %}
+            {% if p.proof %}<a class="text-small" href="{% url 'public:private_file' 'bukti' p.pk %}" target="_blank" rel="noopener">Lihat bukti</a>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {# 4. Tiket #}
+  <section class="stack" aria-labelledby="tiket">
+    <h2 id="tiket">Tiket kamu</h2>
+    {% for line in order.lines.all %}
+      <article class="card stack ticket-card">
+        <div class="cluster cluster-between">
+          <div><strong>{{ line.holder_name }}</strong>{% if line.holder_nik_last4 %} <span class="text-small text-muted">· KTP {{ line.nik_masked }}</span>{% endif %}</div>
+          <span class="chip">{{ line.service_type }} · {{ line.quantity }} tiket</span>
+        </div>
+        <p class="text-small text-muted">Pilihan: {{ line.cat_primary.name }}{% if line.cat_backup1 %} / {{ line.cat_backup1.name }}{% endif %}{% if line.cat_backup2 %} / {{ line.cat_backup2.name }}{% endif %}</p>
+        <ul class="slot-list">
+          {% for slot in line.slots.all %}
+            <li>
+              <span class="text-small">Tiket {{ slot.index }}</span>
+              <span class="badge badge--{{ slot.result|result_tone }}">{% if slot.result == "SECURED" %}Dapat {{ slot.secured_category.name }} 🎉{% else %}{{ slot.get_result_display }}{% endif %}</span>
+              {% if slot.result == "SECURED" %}
+                <span class="text-small">{% if line.service_type == "JASTIP" %}{{ slot.get_fulfillment_status_display }}{% if slot.handover_method %} · {{ slot.get_handover_method_display }}{% endif %}{% if slot.handover_detail %} · {{ slot.handover_detail }}{% endif %}
+                  {% elif slot.fulfillment_status == "INFO_DIKIRIM" %}Info penukaran dikirim{% else %}Menunggu info penukaran{% endif %}</span>
+                {% if slot.fulfillment_note %}<span class="text-small text-muted">{{ slot.fulfillment_note }}</span>{% endif %}
+                {% if slot.eticket_file %}<a class="text-small" href="{% url 'public:private_file' 'etiket' slot.pk %}" target="_blank" rel="noopener">Unduh e-tiket</a>{% endif %}
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        {% if line.service_type == "JASWAR" and order.event.redemption_info and order.status in "PENYELESAIAN SELESAI" %}
+          <p class="alert alert--info text-small">{% icon "info" %}<span>{{ order.event.redemption_info|linebreaksbr }}</span></p>
+        {% endif %}
+        {% if can_edit_holders %}<a class="text-small" href="{% url 'public:track_holder_edit' order.code line.pk %}">Ubah data pemegang</a>{% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  {# 5. Rincian biaya #}
+  <section class="card stack" aria-labelledby="rincian">
+    <h2 id="rincian" class="card__title">Rincian biaya</h2>
+    <dl class="summary__totals">
+      <div><dt>Tagihan awal (fee{% if order.unique_discount %}, sudah dipotong kode unik{% endif %})</dt><dd class="money">{{ summary.initial_due|rupiah }}</dd></div>
+      {% if summary.pelunasan_due %}<div><dt>Pelunasan (titip bayar)</dt><dd class="money">{{ summary.pelunasan_due|rupiah }}</dd></div>{% endif %}
+      <div><dt>Pembayaran diterima</dt><dd class="money">{{ summary.paid_in|rupiah }}</dd></div>
+      {% if summary.pending_in %}<div><dt>Sedang dicek</dt><dd class="money">{{ summary.pending_in|rupiah }}</dd></div>{% endif %}
+      {% if summary.results_final %}<div><dt>Tagihan final</dt><dd class="money">{{ summary.final_due|rupiah }}</dd></div>{% endif %}
+      {% if summary.refunded %}<div><dt>Refund sudah ditransfer</dt><dd class="money">{{ summary.refunded|rupiah }}</dd></div>{% endif %}
+      {% if summary.results_final and summary.refund_due %}<div class="summary__now"><dt>Hak refund</dt><dd class="money">{{ summary.refund_due|rupiah }}</dd></div>
+      {% elif summary.results_final and summary.shortfall %}<div class="summary__now"><dt>Kekurangan</dt><dd class="money text-pink">{{ summary.shortfall|rupiah }}</dd></div>{% endif %}
+    </dl>
+  </section>
+
+  {# 6. Rekening refund #}
+  {% if refund_needed %}
+    <section id="refund" class="card stack" aria-labelledby="refund-title">
+      <h2 id="refund-title" class="card__title">Rekening refund</h2>
+      {% if order.refund_account_number %}
+        <p>{{ order.refund_bank_name }} <span class="num">{{ order.refund_account_masked }}</span> a.n. {{ order.refund_account_holder }}</p>
+      {% endif %}
+      {% if not refund_locked %}
+        <details{% if not order.refund_account_number or refund_form.is_bound %} open{% endif %}>
+          <summary class="fw-bold">{% if order.refund_account_number %}Ubah rekening{% else %}Isi rekening tujuan refund{% endif %}</summary>
+          <form method="post" action="{% url 'public:track_refund_account' order.code %}" class="stack mt-2" novalidate>
+            {% csrf_token %}
+            {% include "components/form_errors.html" with form=refund_form %}
+            {% include "components/field.html" with field=refund_form.bank %}
+            {% include "components/field.html" with field=refund_form.number %}
+            {% include "components/field.html" with field=refund_form.holder %}
+            <button class="btn btn--primary" type="submit">Simpan rekening</button>
+          </form>
+        </details>
+      {% else %}<p class="text-small text-muted">Refund sudah mulai diproses. Hubungi admin bila perlu mengubah rekening.</p>{% endif %}
+    </section>
+  {% endif %}
+  {% if refunds %}
+    <section class="card stack" aria-labelledby="refund-done">
+      <h2 id="refund-done" class="card__title">Refund ditransfer</h2>
+      <ul class="pay-list">{% for p in refunds %}<li><strong>{{ p.amount_received|rupiah }}</strong> <span class="text-small text-muted">{{ p.transfer_date|date:"j M Y"|default:p.created_at|date:"j M Y" }}</span>
+        {% if p.proof %}<a class="text-small" href="{% url 'public:private_file' 'bukti' p.pk %}" target="_blank" rel="noopener">Lihat bukti refund</a>{% endif %}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
+  {# 8. Timeline #}
+  <section class="card stack" aria-labelledby="riwayat">
+    <h2 id="riwayat" class="card__title">Riwayat</h2>
+    <ol class="timeline">
+      {% for item in order.timeline.all reversed %}
+        <li><span class="timeline__when num">{{ item.created_at|date:"j M H.i" }}</span><strong>{{ item.title }}</strong>{% if item.message %}<span class="text-small text-muted">{{ item.message }}</span>{% endif %}</li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  {# Bantuan & batal #}
+  <section class="cluster track__help">
+    {% if brand.admin_whatsapp %}<a class="btn btn--secondary" href="{% wa_link brand.admin_whatsapp wa_admin_text %}" target="_blank" rel="noopener">{% icon "chat" %}<span>Tanya admin</span></a>{% endif %}
+    {% if can_cancel %}
+      <div x-data="modal">
+        <button type="button" class="btn btn--danger" @click="show">Batalkan pesanan</button>
+        <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="batal-title">
+          <form method="post" action="{% url 'public:track_cancel' order.code %}">{% csrf_token %}
+            <div class="modal__head"><h2 id="batal-title">Batalkan pesanan {{ order.code }}?</h2>
+              <button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+            <div class="modal__body stack stack-sm">
+              {% if cancel_preview.final_due %}<p>Fee <strong>{{ cancel_preview.final_due|rupiah }}</strong> hangus.</p>{% endif %}
+              {% if cancel_preview.refund %}<p>Dana yang kembali ke rekeningmu: <strong>{{ cancel_preview.refund|rupiah }}</strong>.</p>{% endif %}
+              {% if not cancel_preview.final_due and not cancel_preview.refund %}<p>Belum ada pembayaran, jadi tidak ada biaya.</p>{% endif %}
+              <p class="text-small text-muted">Pembatalan tidak bisa diurungkan.</p>
+            </div>
+            <div class="modal__foot">
+              <button type="button" class="btn btn--ghost" @click="hide">Tidak jadi</button>
+              <button type="submit" class="btn btn--danger-solid">Ya, batalkan</button>
+            </div>
+          </form>
+        </dialog>
+      </div>
+    {% endif %}
+  </section>
+  <p class="text-small text-muted text-center">Simpan link halaman ini: <button type="button" class="link-button" x-data="copyButton" data-copy="{{ tracking_url }}" data-toast="Link lacak tersalin ✓" @click="copy">salin link lacak</button></p>
+</div>
+{% endblock %}

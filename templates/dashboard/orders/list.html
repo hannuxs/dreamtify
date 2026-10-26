@@ -1,0 +1,69 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Pesanan{% endblock %}
+{% block page_title %}Pesanan{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <h1 class="page-title">Pesanan</h1>
+    <span class="text-small text-muted">{{ page.paginator.count }} pesanan</span>
+  </div>
+
+  <details class="card filter-panel"{% if filtered %} open{% endif %}>
+    <summary class="fw-bold">{% icon "search" %} Cari &amp; filter</summary>
+    <form method="get" class="stack mt-4">
+      {% include "components/field.html" with field=form.q %}
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.event %}
+        {% include "components/field.html" with field=form.phase %}
+        {% include "components/field.html" with field=form.service %}
+        {% include "components/field.html" with field=form.method %}
+      </div>
+      {% include "components/field.html" with field=form.status %}
+      <div class="cluster">
+        {% include "components/field.html" with field=form.late %}
+        {% include "components/field.html" with field=form.dup %}
+      </div>
+      <div class="cluster"><button class="btn btn--primary" type="submit">Terapkan</button>
+        <a class="btn btn--ghost" href="{% url 'dashboard:order_list' %}">Reset</a></div>
+    </form>
+  </details>
+
+  {% if rows %}
+    <div class="table-wrap">
+      <table class="data-table orders-table">
+        <thead><tr><th scope="col">Kode</th><th scope="col">Pemesan</th><th scope="col">Event / tahap</th><th scope="col">Tiket</th>
+          <th scope="col">Metode</th><th scope="col">Status</th><th scope="col" class="num-col">Dibayar</th><th scope="col" class="num-col">Saldo</th><th scope="col">Dibuat</th></tr></thead>
+        <tbody>
+          {% for row in rows %}{% with o=row.order s=row.summary %}
+            <tr>
+              <td data-label="Kode"><a class="code" href="{% url 'dashboard:order_detail' o.code %}">{{ o.code }}</a>
+                {% if o.is_late_pelunasan %}<span class="badge badge--warning" title="Lewat batas pelunasan">lewat batas</span>{% endif %}
+                {% if o.has_duplicate_nik_warning %}<span class="badge badge--danger" title="NIK sama di tahap ini">NIK ganda</span>{% endif %}</td>
+              <td data-label="Pemesan"><strong>{{ o.buyer_name }}</strong><br><span class="text-small text-muted num">{{ o.buyer_whatsapp }}</span></td>
+              <td data-label="Event / tahap">{{ o.event.name }}<br><span class="text-small text-muted">{{ o.phase.name }}</span></td>
+              <td data-label="Tiket">{{ row.tickets }} · {{ row.services|join:"/" }}</td>
+              <td data-label="Metode">{{ o.get_ticket_payment_method_display }}</td>
+              <td data-label="Status"><span class="badge badge--{{ o.status|status_tone }}">{{ o.get_status_display }}</span></td>
+              <td data-label="Dibayar" class="num num-col">{{ s.paid_in|rupiah }}</td>
+              <td data-label="Saldo" class="num num-col{% if s.results_final and s.balance > 0 %} text-success{% elif s.balance < 0 %} text-pink{% endif %}">{% if s.results_final %}{{ s.balance|rupiah }}{% else %}<span class="text-muted">kurang {{ s.remaining_before_war|rupiah }}</span>{% endif %}</td>
+              <td data-label="Dibuat" class="num text-small">{{ o.created_at|date:"j M H.i" }}</td>
+            </tr>
+          {% endwith %}{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+      <nav class="pager" aria-label="Halaman">
+        {% if page.has_previous %}<a class="btn btn--ghost btn--sm" href="?{{ query }}&amp;page={{ page.previous_page_number }}">← Sebelumnya</a>{% endif %}
+        <span class="text-small">Halaman {{ page.number }} dari {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a class="btn btn--ghost btn--sm" href="?{{ query }}&amp;page={{ page.next_page_number }}">Berikutnya →</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    {% include "components/empty_state.html" with mascot="sleep" title="Tidak ada pesanan" text="Belum ada pesanan yang cocok dengan pencarian/filter ini." %}
+  {% endif %}
+</div>
+{% endblock %}

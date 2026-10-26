@@ -1,0 +1,92 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Verifikasi{% endblock %}
+{% block page_title %}Verifikasi pembayaran{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <div><h1 class="page-title">Verifikasi pembayaran</h1>
+      <p class="text-small text-muted">{{ items|length }} bukti menunggu · terlama di atas · pintasan: <kbd>T</kbd> terima, <kbd>X</kbd> tolak, <kbd>J</kbd>/<kbd>K</kbd> berikutnya/sebelumnya</p></div>
+    <form method="get" class="cluster">
+      <select class="select" name="event" aria-label="Filter event"><option value="">Semua event</option>
+        {% for e in events %}<option value="{{ e.pk }}"{% if params.event == e.pk|stringformat:"d" %} selected{% endif %}>{{ e.name }}</option>{% endfor %}</select>
+      <select class="select" name="kind" aria-label="Filter jenis"><option value="">Semua jenis</option>
+        {% for value, label in kinds %}<option value="{{ value }}"{% if params.kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="btn btn--secondary btn--sm" type="submit">Filter</button>
+    </form>
+  </div>
+
+  {% if not current %}
+    {% include "components/empty_state.html" with mascot="happy" title="Semua bukti sudah dicek 🎉" text="Tidak ada bukti transfer yang menunggu verifikasi." %}
+  {% else %}
+  <div class="verify">
+    <section class="verify__panel card stack" x-data="verifyPanel" data-next="{{ next_url }}" data-prev="{{ prev_url }}"
+             @keydown.window="onKey" aria-labelledby="bukti-title">
+      <div class="cluster cluster-between">
+        <div>
+          <p class="eyebrow">{{ order.event.name }} · {{ order.phase.name }}</p>
+          <h2 id="bukti-title" class="card__title"><a href="{% url 'dashboard:order_detail' order.code %}" class="code">{{ order.code }}</a> · {{ current.get_kind_display }}</h2>
+        </div>
+        <span class="badge badge--{{ order.status|status_tone }}">{{ order.get_status_display }}</span>
+      </div>
+
+      <div class="proof">
+        <div class="proof__tools cluster">
+          {% if not is_pdf %}<button type="button" class="btn btn--ghost btn--sm" @click="zoom">{% icon "search" %}<span x-text="zoomLabel">Perbesar</span></button>
+          <button type="button" class="btn btn--ghost btn--sm" @click="rotate">↻ Putar</button>{% endif %}
+          {% if current.proof %}<a class="btn btn--ghost btn--sm" href="{% url 'public:private_file' 'bukti' current.pk %}" target="_blank" rel="noopener">Buka di tab baru</a>{% endif %}
+        </div>
+        <div class="proof__frame" :class="frameClass">
+          {% if not current.proof %}<p class="text-muted">Tanpa bukti (dicatat admin).</p>
+          {% elif is_pdf %}<p><a class="btn btn--secondary" href="{% url 'public:private_file' 'bukti' current.pk %}" target="_blank" rel="noopener">Buka PDF bukti</a></p>
+          {% else %}<img src="{% url 'public:private_file' 'bukti' current.pk %}" alt="Bukti transfer {{ order.code }}" :class="imgClass">{% endif %}
+        </div>
+      </div>
+
+      <dl class="kv">
+        <div><dt>Nominal klaim</dt><dd class="money fw-bold">{{ current.amount_claimed|rupiah }}</dd></div>
+        <div><dt>Diharapkan</dt><dd class="money">{{ expected|rupiah }}{% if expected_alt %} <span class="text-small text-muted">atau sekaligus {{ expected_alt|rupiah }}</span>{% endif %}</dd></div>
+        <div><dt>Selisih</dt><dd class="money {% if diff < 0 %}text-danger{% else %}text-success{% endif %}">{% if diff > 0 %}+{% endif %}{{ diff|rupiah }}</dd></div>
+        <div><dt>Pengirim</dt><dd>{{ current.sender_name|default:"-" }} · {{ current.sender_bank|default:"-" }}</dd></div>
+        <div><dt>Tanggal transfer</dt><dd>{{ current.transfer_date|date:"D, j M Y"|default:"-" }}</dd></div>
+        <div><dt>Ke rekening</dt><dd>{{ current.destination_account|default:"-" }}</dd></div>
+        <div><dt>Dikirim</dt><dd>{{ current.created_at|date:"j M H.i" }} · {{ current.get_submitted_via_display }}</dd></div>
+        <div><dt>Pemesan</dt><dd>{{ order.buyer_name }} · <span class="num">{{ order.buyer_whatsapp }}</span></dd></div>
+      </dl>
+      {% if other_pending %}<p class="alert alert--info">{% icon "info" %}<span>Pesanan ini punya {{ other_pending|length }} bukti lain yang juga menunggu.</span></p>{% endif %}
+
+      <div class="verify__actions">
+        <form method="post" action="{% url 'dashboard:verify_action' current.pk %}?{{ params_qs }}" class="stack stack-sm verify__accept">{% csrf_token %}
+          <input type="hidden" name="action" value="terima">
+          {% include "components/field.html" with field=accept_form.amount_received %}
+          <button class="btn btn--primary btn--block" type="submit" x-ref="accept">{% icon "check" %}<span>Terima <kbd>T</kbd></span></button>
+        </form>
+        <form method="post" action="{% url 'dashboard:verify_action' current.pk %}?{{ params_qs }}" class="stack stack-sm verify__reject">{% csrf_token %}
+          <input type="hidden" name="action" value="tolak">
+          <div class="cluster">{% for r in quick_reasons %}<button type="button" class="chip chip--button" data-reason="{{ r }}" @click="pick">{{ r }}</button>{% endfor %}</div>
+          <label class="visually-hidden" for="reject-reason">Alasan ditolak</label>
+          <textarea class="textarea" id="reject-reason" name="reason" rows="2" x-ref="reason" placeholder="Alasan ditolak (wajib) — dikirim ke customer"></textarea>
+          <button class="btn btn--danger btn--block" type="submit" x-ref="reject">{% icon "x" %}<span>Tolak <kbd>X</kbd></span></button>
+        </form>
+      </div>
+      <div class="cluster cluster-between">
+        {% if prev_url %}<a class="btn btn--ghost btn--sm" href="{{ prev_url }}">← Sebelumnya <kbd>K</kbd></a>{% else %}<span></span>{% endif %}
+        {% if next_url %}<a class="btn btn--ghost btn--sm" href="{{ next_url }}">Berikutnya <kbd>J</kbd> →</a>{% endif %}
+      </div>
+    </section>
+
+    <nav class="verify__list card" aria-label="Antrian bukti">
+      <ul>
+        {% for p in items %}
+          <li><a href="?{% if params.event %}event={{ params.event }}&amp;{% endif %}{% if params.kind %}kind={{ params.kind }}&amp;{% endif %}p={{ p.pk }}"{% if p == current %} aria-current="true"{% endif %}>
+            <span class="code">{{ p.order.code }}</span><span class="text-small">{{ p.get_kind_display }} · {{ p.amount_claimed|rupiah }}</span>
+            <span class="text-xs text-muted">{{ p.order.event.name }} · {{ p.created_at|timesince }} lalu</span></a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

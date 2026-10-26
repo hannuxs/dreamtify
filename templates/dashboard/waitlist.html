@@ -1,0 +1,72 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Waiting list{% endblock %}
+{% block page_title %}Waiting list{% endblock %}
+
+{% block content %}
+<div class="stack stack-lg">
+  <h1 class="page-title">Waiting list &amp; lewat batas pelunasan</h1>
+  {% for b in blocks %}
+    <section class="card stack" aria-labelledby="ph-{{ b.phase.pk }}">
+      <div class="cluster cluster-between">
+        <div><p class="eyebrow">{{ b.phase.event.name }}</p><h2 id="ph-{{ b.phase.pk }}" class="card__title">{{ b.phase.name }}</h2></div>
+        <div class="cluster text-small">
+          <span class="chip">Kuota {{ b.phase.slot_quota|default:"∞" }}</span>
+          <span class="chip">Terpakai {{ b.used }}</span>
+          <span class="chip">Sisa {% if b.remaining is None %}∞{% else %}{{ b.remaining }}{% endif %}</span>
+        </div>
+      </div>
+      {% if b.phase.slot_quota %}<progress class="progress" value="{{ b.used }}" max="{{ b.phase.slot_quota }}"></progress>{% endif %}
+
+      <h3 class="text-small fw-bold">Waiting list ({{ b.waiting|length }})</h3>
+      {% if b.waiting %}
+        <ol class="queue">
+          {% for w in b.waiting %}
+            <li>
+              <div><a class="code" href="{% url 'dashboard:order_detail' w.order.code %}">{{ w.order.code }}</a> · {{ w.order.buyer_name }}
+                <span class="text-small text-muted">· {{ w.tickets }} tiket · masuk {{ w.order.created_at|date:"j M H.i" }}</span></div>
+              <div class="cluster">
+                <form method="post" action="{% url 'dashboard:order_action' w.order.code 'naikkan' %}">{% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  <button class="btn btn--primary btn--sm" type="submit"{% if not w.fits %} disabled title="Kuota tidak cukup"{% endif %}>Naikkan</button></form>
+                <form method="post" action="{% url 'dashboard:order_action' w.order.code 'batal' %}">{% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  <button class="btn btn--ghost btn--sm" type="submit">Batalkan</button></form>
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}<p class="text-small text-muted">Tidak ada.</p>{% endif %}
+
+      {% if b.late %}
+        <h3 class="text-small fw-bold">Lewat batas pelunasan ({{ b.late|length }}) — batas {{ b.phase.pelunasan_deadline|date:"j M H.i" }}</h3>
+        <ol class="queue">
+          {% for l in b.late %}
+            <li>
+              <div><a class="code" href="{% url 'dashboard:order_detail' l.order.code %}">{{ l.order.code }}</a> · {{ l.order.buyer_name }}
+                <span class="text-small text-muted">· dibayar {{ l.preview.paid|rupiah }}</span></div>
+              <div x-data="modal">
+                <button class="btn btn--danger btn--sm" type="button" @click="show">Lepas slot</button>
+                <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="lepas-{{ l.order.pk }}">
+                  <form method="post" action="{% url 'dashboard:order_action' l.order.code 'lepas-slot' %}">{% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <div class="modal__head"><h2 id="lepas-{{ l.order.pk }}">Lepas slot {{ l.order.code }}?</h2>
+                      <button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+                    <div class="modal__body"><p>Status: <strong>{{ l.preview.status }}</strong> · ditahan {{ l.preview.final_due|rupiah }} · dikembalikan {{ l.preview.refund|rupiah }}.</p>
+                      <p class="text-small text-muted">Slot kembali tersedia untuk waiting list.</p></div>
+                    <div class="modal__foot"><button type="button" class="btn btn--ghost" @click="hide">Batal</button>
+                      <button type="submit" class="btn btn--danger-solid">Lepas slot</button></div>
+                  </form>
+                </dialog>
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      {% endif %}
+    </section>
+  {% empty %}
+    {% include "components/empty_state.html" with mascot="sleep" title="Tidak ada antrian" text="Belum ada tahap dengan kuota, waiting list, atau pesanan lewat batas pelunasan." %}
+  {% endfor %}
+</div>
+{% endblock %}

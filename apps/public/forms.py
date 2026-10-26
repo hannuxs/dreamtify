@@ -7,8 +7,10 @@ from django.core.exceptions import ValidationError
 
 from apps.core.crypto import digits_only
 from apps.core.enums import Gender, ServiceType, TicketPaymentMethod
-from apps.core.forms import DateInput, StyledFormMixin
+from apps.core.forms import DateInput, RupiahField, StyledFormMixin
+from apps.core.models import BankAccount
 from apps.core.phone import normalize_wa
+from apps.core.uploads import ACCEPT_ATTR, process_private_upload
 from apps.core.money import format_rupiah
 
 WA_ATTRS = {"inputmode": "tel", "autocomplete": "tel", "placeholder": "0812 3456 7890",
@@ -129,3 +131,77 @@ class PaymentForm(StyledFormMixin, forms.Form):
 class AgreeForm(StyledFormMixin, forms.Form):
     agree_terms = forms.BooleanField(label="Saya sudah membaca & setuju dengan syarat event dan syarat umum Dreamtify.")
     agree_privacy = forms.BooleanField(label="Saya setuju data KTP dipakai untuk pembelian tiket dan dihapus setelah event selesai.")
+
+
+# ---------------------------------------------------------------------------
+# Lacak pesanan (docs/04 §5)
+# ---------------------------------------------------------------------------
+
+class TrackLoginForm(StyledFormMixin, forms.Form):
+    code = forms.CharField(label="Kode pesanan", max_length=16,
+                           widget=forms.TextInput(attrs={"placeholder": "DRM-XXXXXX", "autocapitalize": "characters",
+                                                         "autocomplete": "off", "spellcheck": "false"}))
+    whatsapp = forms.CharField(label="No. WhatsApp pemesan", max_length=20, widget=forms.TextInput(attrs=WA_ATTRS))
+
+
+class PaymentUploadForm(StyledFormMixin, forms.Form):
+    amount = RupiahField(label="Nominal yang ditransfer (Rp)")
+    sender_name = forms.CharField(label="Nama pengirim (sesuai rekening)", max_length=150)
+    sender_bank = forms.CharField(label="Bank / e-wallet pengirim", max_length=50,
+                                  widget=forms.TextInput(attrs={"placeholder": "BCA, Mandiri, DANA, …"}))
+    transfer_date = forms.DateField(label="Tanggal transfer", widget=DateInput())
+    destination_account = forms.ModelChoiceField(label="Ditransfer ke rekening", queryset=None, required=False,
+                                                 empty_label="Pilih rekening tujuan")
+    proof = forms.FileField(label="Bukti transfer", widget=forms.ClearableFileInput(attrs={"accept": ACCEPT_ATTR}),
+                            help_text="Foto/screenshot (JPG, PNG, WEBP) atau PDF, maks 10 MB.")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        accounts = BankAccount.objects.filter(is_active=True)
+        self.fields["destination_account"].queryset = accounts
+        if len(accounts) == 1:
+            self.fields["destination_account"].initial = accounts[0].pk
+
+    def clean_amount(self):
+        amount = self.cleaned_data["amount"]
+        if not amount:
+            raise ValidationError("Nominal transfer wajib diisi.")
+        return amount
+
+    def clean_proof(self):
+        return process_private_upload(self.cleaned_data["proof"], name="bukti")
+
+
+class RefundAccountForm(StyledFormMixin, forms.Form):
+    bank = forms.CharField(label="Bank / e-wallet", max_length=50)
+    number = forms.CharField(label="Nomor rekening", max_length=30,
+                             widget=forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "off"}))
+    holder = forms.CharField(label="Atas nama", max_length=120)
+
+
+class HolderEditForm(StyledFormMixin, forms.Form):
+    name = forms.CharField(label="Nama lengkap (sesuai KTP)", max_length=150)
+    whatsapp = forms.CharField(label="No. WhatsApp", max_length=20, widget=forms.TextInput(attrs=WA_ATTRS))
+    nik = forms.CharField(label="No. KTP (NIK) baru", required=False, max_length=24, widget=NoValueTextInput(
+        attrs={"inputmode": "numeric", "autocomplete": "off", "pattern": r"[0-9\s]{16,19}"}),
+        help_text="Kosongkan bila tidak berubah.")
+    gender = forms.ChoiceField(label="Jenis kelamin", required=False, choices=Gender.choices, widget=forms.RadioSelect)
+    birth_date = forms.DateField(label="Tanggal lahir", required=False, widget=DateInput())
+    email = forms.EmailField(label="Email", required=False)
+    instagram = forms.CharField(label="Username IG", required=False, max_length=64)
+    membership_no = forms.CharField(label="No. membership", required=False, max_length=64)
+    reason = forms.CharField(label="Alasan koreksi", required=False, max_length=200,
+                             help_text="Wajib bila pesanan sudah masuk war.")
+
+    def __init__(self, *args, line, after_war=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.line = line
+        if line.service_type != ServiceType.JASWAR:
+            for name in ("nik", "gender", "birth_date", "email", "instagram", "membership_no"):
+                del self.fields[name]
+        elif not line.order.phase.membership_required:
+            del self.fields["membership_no"]
+        if line.holder_nik_last4 and "nik" in self.fields:
+            self.fields["nik"].help_text = f"Saat ini •••• {line.holder_nik_last4}. Kosongkan bila tidak berubah."
+        if not after_war:
+            del self.fields["reason"]

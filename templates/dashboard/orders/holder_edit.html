@@ -1,0 +1,17 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Ubah pemegang {{ order.code }}{% endblock %}
+{% block page_title %}Ubah data pemegang{% endblock %}
+
+{% block content %}
+<div class="stack narrow">
+  <a class="back-link" href="{% url 'dashboard:order_detail' order.code %}">← {{ order.code }}</a>
+  <h1 class="page-title">Pemegang #{{ line.sort_order|add:1 }} · {{ line.service_type }}</h1>
+  {% if after_war %}<p class="alert alert--warning">Pesanan sudah masuk war. Koreksi hanya oleh Owner &amp; alasan wajib diisi.</p>{% endif %}
+  <form method="post" class="card stack" novalidate>{% csrf_token %}
+    {% include "components/form_errors.html" %}
+    <div class="form-grid">{% for field in form %}{% include "components/field.html" with field=field %}{% endfor %}</div>
+    <div class="form-actions"><button class="btn btn--primary" type="submit">Simpan</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -66,10 +66,13 @@
         <p class="alert alert--warning">{% icon "alert" %}<span>Rekening belum diatur. Hubungi admin lewat WhatsApp.</span></p>
       {% endfor %}
 
-      <div class="cluster">
-        <a class="btn btn--primary" href="{{ tracking_path }}">{% icon "upload" %}<span>Upload bukti sekarang</span></a>
-        <a class="btn btn--ghost" href="{% url 'public:event_detail' order.event.slug %}">Nanti saja</a>
-      </div>
+      {% if pay_form %}
+        <details class="upload-now">
+          <summary class="btn btn--primary">{% icon "upload" %}<span>Upload bukti sekarang</span></summary>
+          <div class="mt-4">{% include "public/_payment_form.html" %}</div>
+        </details>
+      {% endif %}
+      <a class="btn btn--ghost" href="{{ tracking_path }}">Nanti saja — buka halaman lacak</a>
       <p class="text-small text-muted">Lewat batas bayar fee, pesanan otomatis dibatalkan (belum ada uang yang ditahan).</p>
     </section>
   {% endif %}

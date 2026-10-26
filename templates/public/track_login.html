@@ -1,0 +1,24 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}Lacak pesanan — {{ brand.name }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/order.css' %}"><meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="container track-login">
+  <div class="card card--sticker stack track-login__card">
+    <img src="{% static 'img/cloud-happy.svg' %}" alt="" width="120" height="90" class="track-login__mascot">
+    <h1 class="title-logo">Lacak pesanan</h1>
+    <p class="text-muted">Masukkan kode pesanan dan nomor WhatsApp yang kamu pakai saat memesan.</p>
+    <form method="post" class="stack" novalidate>
+      {% csrf_token %}
+      {% if error %}<div class="alert alert--danger" role="alert">{% icon "alert" %}<span>{{ error }}</span></div>{% endif %}
+      {% include "components/field.html" with field=form.code %}
+      {% include "components/field.html" with field=form.whatsapp %}
+      <button class="btn btn--primary btn--block" type="submit"><span>Lihat pesanan</span>{% icon "arrow-right" %}</button>
+    </form>
+    <p class="text-small text-muted">Kode pesanan ada di halaman sukses &amp; pesan WhatsApp dari kami (format <span class="code">DRM-XXXXXX</span>).
+      {% if brand.admin_whatsapp %}Lupa kode? <a href="{% wa_link brand.admin_whatsapp 'Halo kak, saya lupa kode pesanan Dreamtify saya.' %}" target="_blank" rel="noopener">Tanya admin</a>.{% endif %}</p>
+  </div>
+</div>
+{% endblock %}

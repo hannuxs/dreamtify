@@ -10,9 +10,9 @@
     <h1 id="tugas" class="page-title">Halo, {{ user.first_name|default:user.get_username }} ☁️</h1>
     <div class="stat-grid">
       {% for s in stats %}
-        <div class="stat{% if s.value %} stat--attention{% endif %}">
+        {% if s.url %}<a class="stat{% if s.value %} stat--attention{% endif %}" href="{{ s.url }}">{% else %}<div class="stat{% if s.value %} stat--attention{% endif %}">{% endif %}
           <span class="stat__value">{{ s.value }}</span><span class="stat__label">{{ s.label }}</span>
-        </div>
+        {% if s.url %}</a>{% else %}</div>{% endif %}
       {% endfor %}
     </div>
   </section>
@@ -51,7 +51,8 @@
               <p class="text-small text-muted">Belum ada pesanan.</p>
             {% endif %}
             <div class="cluster card__footer">
-              <a class="btn btn--secondary btn--sm" href="{% url 'dashboard:event_edit' a.event.pk 'info' %}">Kelola event</a>
+              <a class="btn btn--secondary btn--sm" href="{% url 'dashboard:order_list' %}?phase={{ a.phase.pk }}">Pesanan</a>
+              <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:event_edit' a.event.pk 'info' %}">Kelola event</a>
               <a class="btn btn--ghost btn--sm" href="{% url 'public:event_detail' a.event.slug %}" target="_blank" rel="noopener">Lihat halaman</a>
             </div>
           </article>

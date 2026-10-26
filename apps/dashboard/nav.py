@@ -20,9 +20,9 @@ class NavItem:
 ITEMS = (
     NavItem("home", "Beranda tugas", "home", "dashboard:home", short="Beranda"),
     NavItem("events", "Event", "calendar", "dashboard:event_list", group="Operasional"),
-    NavItem("orders", "Pesanan", "list", group="Operasional"),
-    NavItem("verify", "Verifikasi", "check-circle", group="Operasional"),
-    NavItem("waitlist", "Waiting list", "hourglass", group="Operasional"),
+    NavItem("orders", "Pesanan", "list", "dashboard:order_list", group="Operasional"),
+    NavItem("verify", "Verifikasi", "check-circle", "dashboard:verify_queue", group="Operasional"),
+    NavItem("waitlist", "Waiting list", "hourglass", "dashboard:waitlist", group="Operasional"),
     NavItem("war", "Mode War", "bolt", group="Operasional", short="War"),
     NavItem("settlement", "Penyelesaian", "receipt", group="Operasional"),
     NavItem("handover", "Penyerahan", "gift", group="Operasional"),

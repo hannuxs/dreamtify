@@ -87,7 +87,6 @@ def main():
         ws.send("Page.enable")
         ws.send("Page.navigate", url=url)
         time.sleep(2.5)
-        clip = None
         if full:
             m = ws.send("Page.getLayoutMetrics")
             h = int(m["cssContentSize"]["height"])
@@ -109,7 +108,6 @@ def main():
             r = ws.send("Runtime.evaluate", expression=js, returnByValue=True, awaitPromise=True)
             print("eval =", r.get("result", {}).get("value"), r.get("exceptionDetails", {}).get("text", ""))
             time.sleep(1.0)
-        logs = ws.send("Runtime.evaluate", expression="window.__errs ? window.__errs.join('|') : ''", returnByValue=True)
         sw = ws.send("Runtime.evaluate", expression="document.documentElement.scrollWidth+'/'+innerWidth",
                      returnByValue=True)["result"]["value"]
         print("scrollWidth/innerWidth =", sw)

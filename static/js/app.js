@@ -160,6 +160,85 @@
       };
     });
 
+    /* --- Antrian verifikasi: T terima, X tolak, J/K berikutnya/sebelumnya,
+           zoom & putar bukti, alasan cepat --- */
+    Alpine.data("verifyPanel", function () {
+      return {
+        rotation: 0,
+        zoomed: false,
+        get zoomLabel() { return this.zoomed ? "Perkecil" : "Perbesar"; },
+        get imgClass() { return "rot-" + this.rotation; },
+        get frameClass() { return { "is-zoomed": this.zoomed }; },
+        zoom: function () { this.zoomed = !this.zoomed; },
+        rotate: function () { this.rotation = (this.rotation + 90) % 360; },
+        pick: function (event) {
+          this.$refs.reason.value = event.currentTarget.dataset.reason;
+          this.$refs.reason.focus();
+        },
+        onKey: function (event) {
+          var tag = (event.target.tagName || "").toLowerCase();
+          if (event.ctrlKey || event.metaKey || event.altKey) return;
+          if (tag === "input" || tag === "textarea" || tag === "select") return;
+          var key = event.key.toLowerCase();
+          var ds = this.$root.dataset;
+          if (key === "t") {
+            event.preventDefault();
+            this.$refs.accept.click();
+          } else if (key === "x") {
+            event.preventDefault();
+            if (this.$refs.reason.value.trim()) this.$refs.reject.click();
+            else this.$refs.reason.focus();
+          } else if (key === "j" && ds.next) {
+            window.location.href = ds.next;
+          } else if (key === "k" && ds.prev) {
+            window.location.href = ds.prev;
+          }
+        },
+      };
+    });
+
+    /* --- Area upload: seret/klik, validasi ukuran, pratinjau gambar --- */
+    Alpine.data("fileDrop", function () {
+      return {
+        label: "Pilih foto/screenshot atau PDF",
+        preview: "",
+        dragging: false,
+        get hasPreview() { return this.preview !== ""; },
+        get dropClass() { return { "is-dragging": this.dragging, "has-file": this.preview !== "" || this.label.indexOf(".") > 0 }; },
+        input: function () { return this.$root.querySelector("input[type=file]"); },
+        over: function () { this.dragging = true; },
+        leave: function () { this.dragging = false; },
+        drop: function (event) {
+          this.dragging = false;
+          var input = this.input();
+          if (event.dataTransfer && event.dataTransfer.files.length) {
+            input.files = event.dataTransfer.files;
+            this.picked();
+          }
+        },
+        picked: function () {
+          var self = this;
+          var input = this.input();
+          var file = input.files && input.files[0];
+          this.preview = "";
+          if (!file) { this.label = "Pilih foto/screenshot atau PDF"; return; }
+          var max = Number(input.dataset.max) || 10485760;
+          if (file.size > max) {
+            input.value = "";
+            this.label = "Pilih foto/screenshot atau PDF";
+            toast("Ukuran file maksimal 10 MB.", "danger");
+            return;
+          }
+          this.label = file.name;
+          if (/^image\//.test(file.type) && file.size < 6 * 1024 * 1024) {
+            var reader = new FileReader();
+            reader.onload = function () { self.preview = String(reader.result); };
+            reader.readAsDataURL(file);
+          }
+        },
+      };
+    });
+
     /* --- Halaman sukses: pilih "fee saja" / "bayar sekaligus" --- */
     Alpine.data("payChoice", function () {
       return {

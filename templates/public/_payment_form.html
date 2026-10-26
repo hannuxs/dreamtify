@@ -1,0 +1,26 @@
+{% load ui %}{% comment %}
+Form upload bukti transfer. Parameter: order, pay_form
+{% endcomment %}<form method="post" action="{% url 'public:track_pay' order.code %}" enctype="multipart/form-data" class="stack" novalidate>
+  {% csrf_token %}
+  {% include "components/form_errors.html" with form=pay_form %}
+  <div class="form-grid">
+    {% include "components/field.html" with field=pay_form.amount %}
+    {% include "components/field.html" with field=pay_form.transfer_date %}
+    {% include "components/field.html" with field=pay_form.sender_name %}
+    {% include "components/field.html" with field=pay_form.sender_bank %}
+    {% include "components/field.html" with field=pay_form.destination_account wide=True %}
+    <div class="field field--wide{% if pay_form.proof.errors %} has-error{% endif %}">
+      <label class="field__label" for="{{ pay_form.proof.id_for_label }}">{{ pay_form.proof.label }}<span class="req" aria-hidden="true"> *</span></label>
+      <label class="upload" x-data="fileDrop" :class="dropClass" @dragover.prevent="over" @dragleave="leave" @drop.prevent="drop">
+        {% icon "upload" "icon-lg" %}
+        <span class="upload__text" x-text="label">Pilih foto/screenshot atau PDF</span>
+        <span class="upload__hint">{{ pay_form.proof.help_text }}</span>
+        <img class="upload__preview" x-show="hasPreview" x-cloak :src="preview" alt="Pratinjau bukti">
+        <input class="upload__input" type="file" name="{{ pay_form.proof.html_name }}" id="{{ pay_form.proof.id_for_label }}"
+               accept="{{ pay_form.proof.field.widget.attrs.accept }}" required @change="picked" data-max="10485760">
+      </label>
+      {% for e in pay_form.proof.errors %}<span class="field__error" id="{{ pay_form.proof.html_name }}-error">{{ e }}</span>{% endfor %}
+    </div>
+  </div>
+  <button class="btn btn--primary btn--block" type="submit">{% icon "upload" %}<span>Kirim bukti transfer</span><span class="btn__spinner" aria-hidden="true"></span></button>
+</form>

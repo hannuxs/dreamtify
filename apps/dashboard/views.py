@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -124,9 +125,12 @@ def home(request):
     now = timezone.now()
     week = now + timedelta(days=7)
     stats = [
-        {"label": "Bukti menunggu verifikasi", "value": Payment.objects.filter(status=PaymentStatus.MENUNGGU).count()},
-        {"label": "Lewat batas pelunasan", "value": Order.objects.filter(is_late_pelunasan=True).count()},
-        {"label": "Waiting list", "value": Order.objects.filter(status=OrderStatus.WAITING_LIST).count()},
+        {"label": "Bukti menunggu verifikasi", "value": Payment.objects.filter(status=PaymentStatus.MENUNGGU).count(),
+         "url": reverse("dashboard:verify_queue")},
+        {"label": "Lewat batas pelunasan", "value": Order.objects.filter(is_late_pelunasan=True).count(),
+         "url": reverse("dashboard:waitlist")},
+        {"label": "Waiting list", "value": Order.objects.filter(status=OrderStatus.WAITING_LIST).count(),
+         "url": reverse("dashboard:waitlist")},
         {"label": "Kabar belum dikirim", "value": Notification.objects.filter(
             status=NotificationStatus.PERLU_DIKIRIM, channel=NotificationChannel.WA).count()},
         {"label": "Testimoni menunggu", "value": Testimonial.objects.filter(status=TestimonialStatus.MENUNGGU).count()},

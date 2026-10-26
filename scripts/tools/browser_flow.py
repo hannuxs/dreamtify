@@ -67,6 +67,24 @@ class Browser:
         time.sleep(wait)
         return "ok"
 
+    def set_file(self, selector, path):
+        """Pilih file asli pada <input type=file> (memicu event change seperti pengguna)."""
+        root = self.ws.send("DOM.getDocument")["root"]["nodeId"]
+        node = self.ws.send("DOM.querySelector", nodeId=root, selector=selector)["nodeId"]
+        if not node:
+            return f"TIDAK ADA {selector}"
+        self.ws.send("DOM.setFileInputFiles", files=[os.path.abspath(path)], nodeId=node)
+        time.sleep(0.8)
+        return "ok"
+
+    def key(self, key, wait=1.5):
+        """Tekan satu tombol keyboard (event asli)."""
+        for t in ("keyDown", "keyUp"):
+            self.ws.send("Input.dispatchKeyEvent", type=t, key=key, text=key if t == "keyDown" else "",
+                         code=f"Key{key.upper()}", windowsVirtualKeyCode=ord(key.upper()))
+        time.sleep(wait)
+        return "ok"
+
     def shot(self, name, full=False):
         if full:
             h = int(self.ws.send("Page.getLayoutMetrics")["cssContentSize"]["height"])
@@ -98,6 +116,10 @@ def main():
                 res = b.eval(step["js"], step.get("wait", 0.6))
             elif kind == "click":
                 res = b.click(step["sel"], step.get("wait", 0.8))
+            elif kind == "file":
+                res = b.set_file(step["sel"], step["path"])
+            elif kind == "key":
+                res = b.key(step["key"], step.get("wait", 1.5))
             elif kind == "shot":
                 res = b.shot(step["name"], step.get("full", False))
             print(f"[{kind}] {step.get('label', '')} -> {res}")

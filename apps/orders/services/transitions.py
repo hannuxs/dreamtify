@@ -57,9 +57,13 @@ ALLOWED = {
                      S.DIBATALKAN, S.HANGUS},
     S.VERIFIKASI_FEE: {S.MENUNGGU_FEE, S.MENUNGGU_PELUNASAN, S.VERIFIKASI_PELUNASAN, S.SIAP_WAR,
                        S.DIBATALKAN, S.HANGUS},
-    S.MENUNGGU_PELUNASAN: {S.VERIFIKASI_PELUNASAN, S.SIAP_WAR, S.DIBATALKAN, S.HANGUS},
-    S.VERIFIKASI_PELUNASAN: {S.MENUNGGU_PELUNASAN, S.SIAP_WAR, S.DIBATALKAN, S.HANGUS},
-    S.SIAP_WAR: {S.PROSES_WAR, S.DIBATALKAN, S.HANGUS},
+    # ASUMSI: "Hitung ulang tagihan" (admin) bisa menaikkan tagihan → kembali menunggu bayar
+    S.MENUNGGU_PELUNASAN: {S.VERIFIKASI_PELUNASAN, S.SIAP_WAR, S.MENUNGGU_FEE, S.VERIFIKASI_FEE,
+                           S.DIBATALKAN, S.HANGUS},
+    S.VERIFIKASI_PELUNASAN: {S.MENUNGGU_PELUNASAN, S.SIAP_WAR, S.MENUNGGU_FEE, S.VERIFIKASI_FEE,
+                             S.DIBATALKAN, S.HANGUS},
+    S.SIAP_WAR: {S.PROSES_WAR, S.MENUNGGU_FEE, S.VERIFIKASI_FEE, S.MENUNGGU_PELUNASAN,
+                 S.VERIFIKASI_PELUNASAN, S.DIBATALKAN, S.HANGUS},
     S.PROSES_WAR: {S.PENYELESAIAN, S.SELESAI, S.DIBATALKAN},
     # ASUMSI D4: koreksi/undo hasil selama tahap masih WAR → kembali PROSES_WAR
     S.PENYELESAIAN: {S.SELESAI, S.PROSES_WAR, S.DIBATALKAN},
@@ -376,7 +380,7 @@ def _after_payment_change(order, *, actor: Actor, now=None):
     summary = settlement.summarize(fresh)
     pending = bool(settlement.pending_incoming(fresh))
 
-    if order.status in PAYMENT_STAGE:
+    if order.status in PAYMENT_STAGE + (S.SIAP_WAR,):
         titip = order.ticket_payment_method == TicketPaymentMethod.TITIP_BAYAR
         if summary.paid_in >= summary.total_before_war:
             target = S.SIAP_WAR
@@ -771,3 +775,116 @@ def _refresh_completion(order, *, actor: Actor):
     elif summary.balance < 0:
         notify.enqueue(order, "KEKURANGAN_BAYAR", extra={"nominal": summary.shortfall},
                        dedupe=f"{order.code}:KEKURANGAN_BAYAR:{summary.shortfall}")
+
+
+# ---------------------------------------------------------------------------
+# Perubahan oleh admin: baris tiket & hitung ulang tagihan (docs/02 §11)
+# ---------------------------------------------------------------------------
+
+RECALC_STATUSES = (S.WAITING_LIST,) + PAYMENT_STAGE + (S.SIAP_WAR,)
+
+
+@dataclass(frozen=True)
+class RecalcPreview:
+    old_initial: int
+    old_pelunasan: int
+    new_initial: int
+    new_pelunasan: int
+
+    @property
+    def changed(self) -> bool:
+        return (self.old_initial, self.old_pelunasan) != (self.new_initial, self.new_pelunasan)
+
+
+def _requote(order):
+    """Hitung ulang dengan harga event saat ini (unique discount tetap)."""
+    ctx = PricingContext.for_phase(order.phase)
+    lines = list(order.lines.all())
+    quote = quote_order(ctx, [LineInput(ln.service_type, ln.quantity, tuple(ln.category_ids)) for ln in lines],
+                        order.ticket_payment_method, unique_discount=order.unique_discount)
+    return ctx, lines, quote
+
+
+def recalculate_preview(order) -> RecalcPreview:
+    _, _, quote = _requote(order)
+    return RecalcPreview(order.fee_due, order.pelunasan_due, quote.initial_due, quote.pelunasan_due)
+
+
+@transaction.atomic
+def recalculate_order(order, *, actor: Actor, now=None) -> RecalcPreview:
+    """"Hitung ulang tagihan": snapshot harga diperbarui ke harga event saat ini."""
+    order = _lock(order)
+    if order.status not in RECALC_STATUSES:
+        raise InvalidTransition("Tagihan hanya bisa dihitung ulang sebelum war.")
+    try:
+        ctx, lines, quote = _requote(order)
+    except ValueError as exc:  # PricingError
+        raise InvalidTransition(str(exc)) from exc
+    preview = RecalcPreview(order.fee_due, order.pelunasan_due, quote.initial_due, quote.pelunasan_due)
+    for line, q in zip(lines, quote.lines):
+        line.tier_snapshot = q.tier
+        line.fee_per_ticket_snapshot = q.fee_per_ticket
+        line.price_basis_per_ticket_snapshot = q.price_basis_per_ticket
+        line.early_booking_per_ticket_snapshot = q.early_booking_per_ticket
+        line.save(update_fields=["tier_snapshot", "fee_per_ticket_snapshot", "price_basis_per_ticket_snapshot",
+                                 "early_booking_per_ticket_snapshot", "updated_at"])
+    order.fee_due = quote.initial_due
+    order.pelunasan_due = quote.pelunasan_due
+    order.pricing_snapshot = ctx.to_snapshot()
+    order.save(update_fields=["fee_due", "pelunasan_due", "pricing_snapshot", "updated_at"])
+    if preview.changed:
+        _timeline(order, "Tagihan diperbarui",
+                  f"Tagihan awal {format_rupiah(preview.new_initial)}"
+                  + (f", pelunasan {format_rupiah(preview.new_pelunasan)}" if preview.new_pelunasan else "") + ".",
+                  actor=actor)
+    audit.log("order.recalculate", actor=actor, obj=order, summary=f"{order.code}: tagihan dihitung ulang",
+              data={"old": [preview.old_initial, preview.old_pelunasan],
+                    "new": [preview.new_initial, preview.new_pelunasan]})
+    if order.status != S.WAITING_LIST:
+        _after_payment_change(order, actor=actor, now=now)
+    return preview
+
+
+@transaction.atomic
+def admin_update_line(line, *, actor: Actor, quantity: int, primary: int, backup1=None, backup2=None,
+                      now=None) -> OrderLine:
+    """Admin mengubah jumlah/kategori satu baris sebelum war → tiket disesuaikan + hitung ulang."""
+    phase = quota.lock_phase(line.order.phase_id)
+    order = _lock(line.order_id)
+    line = OrderLine.objects.select_for_update().get(pk=line.pk)
+    if order.status not in RECALC_STATUSES:
+        raise InvalidTransition("Jumlah & kategori hanya bisa diubah sebelum war.")
+    event = order.event
+    cats = [c for c in (primary, backup1, backup2) if c]
+    errors = {}
+    if not 1 <= int(quantity) <= event.max_tickets_per_holder:
+        errors["quantity"] = [f"Jumlah tiket 1–{event.max_tickets_per_holder}."]
+    if len(cats) != len(set(cats)):
+        errors["backup1"] = ["Kategori utama, cadangan 1, dan cadangan 2 harus berbeda."]
+    active = set(event.categories.filter(is_active=True).values_list("pk", flat=True))
+    if any(c not in active for c in cats):
+        errors["primary"] = ["Kategori tidak tersedia."]
+    for n, cid in enumerate((backup1, backup2), start=1):
+        if n <= event.required_backups and not cid:
+            errors[f"backup{n}"] = [f"Kategori cadangan {n} wajib."]
+    if errors:
+        raise ValidationError(errors)
+    delta = int(quantity) - line.quantity
+    if delta > 0 and order.status != S.WAITING_LIST and not quota.can_fit(phase, delta):
+        raise QuotaFull(f"Kuota tahap tidak cukup untuk menambah {delta} tiket.")
+
+    before = (line.quantity, line.cat_primary_id, line.cat_backup1_id, line.cat_backup2_id)
+    line.quantity = int(quantity)
+    line.cat_primary_id, line.cat_backup1_id, line.cat_backup2_id = primary, backup1, backup2
+    line.save()
+    existing = list(line.slots.order_by("index"))
+    if delta > 0:
+        TicketSlot.objects.bulk_create([TicketSlot(line=line, index=len(existing) + n) for n in range(1, delta + 1)])
+    elif delta < 0:
+        TicketSlot.objects.filter(pk__in=[s.pk for s in existing[delta:]]).delete()
+    audit.log("order.line_update", actor=actor, obj=order,
+              summary=f"{order.code}: baris #{line.sort_order + 1} diubah",
+              data={"line": line.pk, "before": before,
+                    "after": (line.quantity, line.cat_primary_id, line.cat_backup1_id, line.cat_backup2_id)})
+    recalculate_order(order, actor=actor, now=now)
+    return line

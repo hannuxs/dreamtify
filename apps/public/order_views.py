@@ -25,18 +25,18 @@ from apps.events import services as event_services
 from apps.events.models import Event
 from apps.orders.models import Order
 from apps.orders.selectors import get_order
-from apps.orders.services import quota, settlement, transitions
-from apps.orders.services.links import check_tracking_token, tracking_path, tracking_url
+from apps.orders.services import guidance, quota, settlement, transitions
+from apps.orders.services.links import tracking_path, tracking_url
 from apps.orders.services.pricing import LineInput, PricingContext, PricingError, quote_order
 from apps.orders.services.validation import BuyerData, HolderData, LineData
 
-from .forms import AgreeForm, BuyerForm, LineForm, PaymentForm
+from . import access
+from .forms import AgreeForm, BuyerForm, LineForm, PaymentForm, PaymentUploadForm
 
 ORDER_LIMIT = 5
 ORDER_WINDOW = 10 * 60
 SESSION_TOKENS = "order_form_tokens"
 SESSION_TOKEN_RESULTS = "order_form_results"
-SESSION_MY_ORDERS = "my_orders"
 
 STEP_OF_PREFIX = {"buyer": 1, "lines": 2, "pay": 3, "agree": 4}
 
@@ -218,7 +218,8 @@ def order_form(request, slug):
                     tokens = [t for t in request.session.get(SESSION_TOKENS, []) if t != token]
                     request.session[SESSION_TOKENS] = tokens
                     request.session[SESSION_TOKEN_RESULTS] = {**done, token: order.code}
-                    request.session[SESSION_MY_ORDERS] = request.session.get(SESSION_MY_ORDERS, [])[-19:] + [order.code]
+                    request.session[access.SESSION_MY_ORDERS] = (
+                        request.session.get(access.SESSION_MY_ORDERS, [])[-19:] + [order.code])
                     return redirect("public:order_success", code=order.code)
         initial_step = _first_error_step(buyer, pay, agree, lines, general)
     else:
@@ -300,9 +301,7 @@ def order_quote(request, slug):
 # ---------------------------------------------------------------------------
 
 def order_success(request, code):
-    token = request.GET.get("t", "")
-    allowed = code in request.session.get(SESSION_MY_ORDERS, []) or (token and check_tracking_token(code, token))
-    if not allowed:
+    if not access.has_access(request, code):
         raise Http404
     try:
         order = get_order(code)
@@ -310,9 +309,13 @@ def order_success(request, code):
         raise Http404 from None
     summary = settlement.summarize(order)
     link = tracking_url(order)
+    accounts = list(BankAccount.objects.filter(is_active=True))
+    due = guidance.payment_due(order, summary)
+    pay_form = PaymentUploadForm(initial={
+        "amount": due.amount, "transfer_date": timezone.localdate(), "sender_name": order.buyer_name}) if due else None
     return render(request, "public/order_success.html", {
         "order": order, "summary": summary, "tracking_url": link, "tracking_path": tracking_path(order),
-        "accounts": BankAccount.objects.filter(is_active=True),
+        "accounts": accounts, "pay_form": pay_form, "due": due,
         "titip": order.ticket_payment_method == TicketPaymentMethod.TITIP_BAYAR,
         "waiting": order.status == OrderStatus.WAITING_LIST,
         "awaiting_fee": order.status == OrderStatus.MENUNGGU_FEE,

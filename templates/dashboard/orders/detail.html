@@ -1,0 +1,186 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}{{ order.code }}{% endblock %}
+{% block page_title %}Detail pesanan{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <a class="back-link" href="{% url 'dashboard:order_list' %}">← Semua pesanan</a>
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">{{ order.event.name }} · {{ order.phase.name }} · {{ order.get_ticket_payment_method_display }}</p>
+      <div class="cluster"><h1 class="page-title code">{{ order.code }}</h1>
+        <span class="badge badge--{{ order.status|status_tone }}">{{ order.get_status_display }}</span>
+        {% if order.cancel_reason %}<span class="badge badge--neutral">{{ order.get_cancel_reason_display }}</span>{% endif %}</div>
+    </div>
+    <div class="cluster">
+      {% if pending_count %}<a class="btn btn--primary btn--sm" href="{% url 'dashboard:verify_queue' %}?event={{ order.event_id }}">{% icon "check-circle" %}<span>Verifikasi ({{ pending_count }})</span></a>{% endif %}
+      {% if can_promote %}
+        <form method="post" action="{% url 'dashboard:order_action' order.code 'naikkan' %}">{% csrf_token %}
+          <button class="btn btn--primary btn--sm" type="submit">{% icon "arrow-right" %}<span>Naikkan dari waiting list</span></button></form>
+      {% endif %}
+      {% if can_release %}
+        <div x-data="modal"><button class="btn btn--danger btn--sm" type="button" @click="show">Lepas slot</button>
+          <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="lepas-title">
+            <form method="post" action="{% url 'dashboard:order_action' order.code 'lepas-slot' %}">{% csrf_token %}
+              <div class="modal__head"><h2 id="lepas-title">Lepas slot {{ order.code }}?</h2><button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+              <div class="modal__body stack stack-sm"><p>Status menjadi <strong>{{ release_preview.status }}</strong> (kebijakan event: {{ order.event.get_late_pelunasan_policy_display|lower }}).</p>
+                <p>Ditahan: <strong>{{ release_preview.final_due|rupiah }}</strong> · Dikembalikan: <strong>{{ release_preview.refund|rupiah }}</strong></p></div>
+              <div class="modal__foot"><button type="button" class="btn btn--ghost" @click="hide">Batal</button><button type="submit" class="btn btn--danger-solid">Lepas slot</button></div>
+            </form></dialog></div>
+      {% endif %}
+      {% if recalc and recalc.changed %}
+        <div x-data="modal"><button class="btn btn--secondary btn--sm" type="button" @click="show">Hitung ulang tagihan</button>
+          <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="recalc-title">
+            <form method="post" action="{% url 'dashboard:order_action' order.code 'hitung-ulang' %}">{% csrf_token %}
+              <div class="modal__head"><h2 id="recalc-title">Hitung ulang dengan harga event saat ini?</h2><button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+              <div class="modal__body"><dl class="summary__totals">
+                <div><dt>Tagihan awal</dt><dd>{{ recalc.old_initial|rupiah }} → <strong>{{ recalc.new_initial|rupiah }}</strong></dd></div>
+                <div><dt>Pelunasan</dt><dd>{{ recalc.old_pelunasan|rupiah }} → <strong>{{ recalc.new_pelunasan|rupiah }}</strong></dd></div></dl>
+                <p class="text-small text-muted mt-2">Status pembayaran ikut disesuaikan. Tercatat di log.</p></div>
+              <div class="modal__foot"><button type="button" class="btn btn--ghost" @click="hide">Batal</button><button type="submit" class="btn btn--primary">Hitung ulang</button></div>
+            </form></dialog></div>
+      {% endif %}
+      <a class="btn btn--ghost btn--sm" href="{% wa_link order.buyer_whatsapp 'Halo kak' %}" target="_blank" rel="noopener">{% icon "chat" %}<span>WA pemesan</span></a>
+      {% include "components/copy_button.html" with value=tracking_url label="Salin link lacak" toast="Link lacak tersalin ✓" %}
+      {% if can_cancel %}
+        <div x-data="modal"><button class="btn btn--danger btn--sm" type="button" @click="show">Batalkan</button>
+          <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="cancel-title">
+            <form method="post" action="{% url 'dashboard:order_action' order.code 'batal' %}" class="stack">{% csrf_token %}
+              <div class="modal__head"><h2 id="cancel-title">Batalkan {{ order.code }} (refund penuh)?</h2><button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+              <div class="modal__body stack stack-sm"><p>Status menjadi Dibatalkan. Dana yang dikembalikan: <strong>{{ cancel_preview.refund|rupiah }}</strong>.</p>
+                <label class="field"><span class="field__label">Catatan untuk customer (opsional)</span><input class="input" name="note" maxlength="200"></label></div>
+              <div class="modal__foot"><button type="button" class="btn btn--ghost" @click="hide">Tidak</button><button type="submit" class="btn btn--danger-solid">Batalkan pesanan</button></div>
+            </form></dialog></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="alert alert--info">{% icon "info" %}<span><strong>Customer:</strong> {{ action.title }} — {{ action.text }}</span></p>
+  {% if order.has_duplicate_nik_warning %}<p class="alert alert--warning">{% icon "alert" %}<span>NIK yang sama dipakai lebih dari sekali di tahap ini. Cek batas tiket per KTP di platform.</span></p>{% endif %}
+
+  <div class="edit-layout">
+    <div class="edit-layout__main stack">
+      <section class="card stack" aria-labelledby="kontak">
+        <h2 id="kontak" class="card__title">Pemesan</h2>
+        <dl class="kv">
+          <div><dt>Nama</dt><dd>{{ order.buyer_name }}</dd></div>
+          <div><dt>WhatsApp</dt><dd class="num">{{ order.buyer_whatsapp }}</dd></div>
+          <div><dt>Email</dt><dd>{{ order.buyer_email }}</dd></div>
+          <div><dt>IG</dt><dd>{{ order.buyer_instagram|default:"-" }}</dd></div>
+          <div><dt>Perekomendasi</dt><dd>{{ order.referral|default:"-" }}</dd></div>
+          <div><dt>Dibuat</dt><dd>{{ order.created_at|date:"j M Y H.i" }}</dd></div>
+          {% if order.fee_deadline %}<div><dt>Batas fee</dt><dd>{{ order.fee_deadline|date:"j M Y H.i" }}</dd></div>{% endif %}
+        </dl>
+      </section>
+
+      <section class="stack" aria-labelledby="baris">
+        <h2 id="baris">Tiket</h2>
+        {% for line, line_form in line_rows %}
+          <article class="card stack">
+            <div class="cluster cluster-between">
+              <h3 class="card__title">#{{ line.sort_order|add:1 }} {{ line.holder_name }}</h3>
+              <span class="chip">{{ line.service_type }} · {{ line.quantity }} tiket · {{ line.get_tier_snapshot_display }}</span>
+            </div>
+            <dl class="kv">
+              <div><dt>Pilihan</dt><dd>{{ line.cat_primary.name }}{% if line.cat_backup1 %} / {{ line.cat_backup1.name }}{% endif %}{% if line.cat_backup2 %} / {{ line.cat_backup2.name }}{% endif %}</dd></div>
+              <div><dt>Fee / harga dasar</dt><dd class="num">{{ line.fee_per_ticket_snapshot|rupiah }} / {{ line.price_basis_per_ticket_snapshot|rupiah }}</dd></div>
+              <div><dt>WA</dt><dd class="num">{{ line.holder_whatsapp|default:"-" }}</dd></div>
+              {% if line.service_type == "JASWAR" %}
+                <div><dt>NIK</dt><dd><span id="nik-{{ line.pk }}" class="num">{{ line.nik_masked|default:"-" }}</span>
+                  {% if is_owner and line.holder_nik_last4 %}<button type="button" class="link-button text-small" hx-post="{% url 'dashboard:reveal_nik' order.code line.pk %}" hx-target="#nik-{{ line.pk }}">Lihat NIK</button>{% endif %}</dd></div>
+                <div><dt>JK / lahir</dt><dd>{{ line.holder_gender|default:"-" }} · {{ line.holder_birth_date|date:"d/m/Y"|default:"-" }}</dd></div>
+                <div><dt>Email / IG</dt><dd>{{ line.holder_email|default:"-" }} · {{ line.holder_instagram|default:"-" }}</dd></div>
+                {% if line.holder_membership_no %}<div><dt>Membership</dt><dd>{{ line.holder_membership_no }}</dd></div>{% endif %}
+              {% endif %}
+            </dl>
+            <ul class="slot-list">
+              {% for slot in line.slots.all %}
+                <li><span class="text-small">Tiket {{ slot.index }}</span>
+                  <span class="badge badge--{{ slot.result|result_tone }}">{% if slot.result == "SECURED" %}Dapat {{ slot.secured_category.name }}{% else %}{{ slot.get_result_display }}{% endif %}</span>
+                  {% if slot.result == "SECURED" %}<span class="text-small text-muted">{{ slot.get_fulfillment_status_display }}</span>{% endif %}</li>
+              {% endfor %}
+            </ul>
+            <div class="cluster">
+              {% if pre_war or is_owner %}<a class="btn btn--ghost btn--sm" href="{% url 'dashboard:holder_edit' order.code line.pk %}">Ubah data pemegang</a>{% endif %}
+            </div>
+            {% if line_form %}
+              <details{% if line_form.is_bound %} open{% endif %}>
+                <summary class="fw-bold text-small">Ubah jumlah / kategori (tagihan dihitung ulang)</summary>
+                <form method="post" action="{% url 'dashboard:line_update' order.code line.pk %}" class="stack mt-2" novalidate>{% csrf_token %}
+                  {% include "components/form_errors.html" with form=line_form %}
+                  <div class="form-grid">{% for field in line_form %}{% include "components/field.html" with field=field %}{% endfor %}</div>
+                  <div><button class="btn btn--secondary btn--sm" type="submit">Simpan &amp; hitung ulang</button></div>
+                </form>
+              </details>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </section>
+
+      <section class="card stack" aria-labelledby="bayar">
+        <h2 id="bayar" class="card__title">Pembayaran</h2>
+        {% if payments %}
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th scope="col">Jenis</th><th scope="col">Status</th><th scope="col">Klaim</th><th scope="col">Diterima</th><th scope="col">Pengirim</th><th scope="col">Bukti</th></tr></thead>
+            <tbody>{% for p in payments %}
+              <tr><td data-label="Jenis">{{ p.get_kind_display }}<br><span class="text-small text-muted">{{ p.created_at|date:"j M H.i" }} · {{ p.get_submitted_via_display }}</span></td>
+                <td data-label="Status"><span class="badge badge--{% if p.status == 'DITERIMA' %}success{% elif p.status == 'DITOLAK' %}danger{% else %}info{% endif %}">{{ p.get_status_display }}</span>
+                  {% if p.reject_reason %}<br><span class="text-small text-pink">{{ p.reject_reason }}</span>{% endif %}</td>
+                <td data-label="Klaim" class="num">{{ p.amount_claimed|rupiah }}</td>
+                <td data-label="Diterima" class="num">{{ p.amount_received|rupiah|default:"-" }}</td>
+                <td data-label="Pengirim">{{ p.sender_name|default:"-" }}{% if p.sender_bank %} · {{ p.sender_bank }}{% endif %}</td>
+                <td data-label="Bukti">{% if p.proof %}<a href="{% url 'public:private_file' 'bukti' p.pk %}" target="_blank" rel="noopener">Lihat</a>{% else %}-{% endif %}</td></tr>
+            {% endfor %}</tbody></table></div>
+        {% else %}<p class="text-muted text-small">Belum ada pembayaran.</p>{% endif %}
+        {% if payment_form %}
+          <details{% if payment_form.is_bound %} open{% endif %}>
+            <summary class="fw-bold text-small">+ Catat pembayaran manual (mis. bukti dikirim lewat WA)</summary>
+            <form method="post" action="{% url 'dashboard:order_action' order.code 'bayar' %}" enctype="multipart/form-data" class="stack mt-2" novalidate>{% csrf_token %}
+              {% include "components/form_errors.html" with form=payment_form %}
+              <div class="form-grid">{% for field in payment_form %}{% include "components/field.html" with field=field %}{% endfor %}</div>
+              <div><button class="btn btn--secondary btn--sm" type="submit">Simpan pembayaran</button></div>
+            </form>
+          </details>
+        {% endif %}
+      </section>
+
+      <section class="card stack" aria-labelledby="riwayat">
+        <h2 id="riwayat" class="card__title">Riwayat</h2>
+        <ol class="timeline">
+          {% for item in timeline reversed %}
+            <li><span class="timeline__when num">{{ item.created_at|date:"j M H.i" }}{% if not item.is_public %} · internal{% endif %} · {{ item.created_by_label }}</span><strong>{{ item.title }}</strong>{% if item.message %}<span class="text-small text-muted">{{ item.message }}</span>{% endif %}</li>
+          {% endfor %}
+        </ol>
+      </section>
+
+      <details class="card">
+        <summary class="fw-bold">Log audit pesanan ({{ audit|length }})</summary>
+        <ul class="list-rows mt-2">{% for log in audit %}<li><span class="list-rows__when num">{{ log.created_at|date:"j M H.i" }}</span><span><strong>{{ log.actor_label }}</strong> · <code>{{ log.action }}</code> · {{ log.summary }}</span></li>{% endfor %}</ul>
+      </details>
+    </div>
+
+    <aside class="edit-layout__side stack">
+      <section class="card stack" aria-labelledby="uang">
+        <h2 id="uang" class="card__title">Keuangan</h2>
+        <dl class="summary__totals">
+          <div><dt>Tagihan awal</dt><dd class="money">{{ summary.initial_due|rupiah }}</dd></div>
+          {% if summary.pelunasan_due %}<div><dt>Pelunasan</dt><dd class="money">{{ summary.pelunasan_due|rupiah }}</dd></div>{% endif %}
+          {% if order.unique_discount %}<div><dt>Kode unik</dt><dd class="money">-{{ order.unique_discount }}</dd></div>{% endif %}
+          <div><dt>Dibayar</dt><dd class="money">{{ summary.paid_in|rupiah }}</dd></div>
+          {% if summary.pending_in %}<div><dt>Menunggu dicek</dt><dd class="money">{{ summary.pending_in|rupiah }}</dd></div>{% endif %}
+          <div><dt>Tagihan final{% if not summary.results_final %} (sementara){% endif %}</dt><dd class="money">{{ summary.final_due|rupiah }}</dd></div>
+          {% if summary.refunded %}<div><dt>Sudah direfund</dt><dd class="money">{{ summary.refunded|rupiah }}</dd></div>{% endif %}
+          <div class="summary__now"><dt>Saldo</dt><dd class="money{% if summary.balance < 0 %} text-pink{% endif %}">{{ summary.balance|rupiah }}</dd></div>
+        </dl>
+        {% if order.refund_account_number %}<p class="text-small">Rekening refund: {{ order.refund_bank_name }} <span class="num">{{ order.refund_account_masked }}</span> a.n. {{ order.refund_account_holder }}</p>{% endif %}
+      </section>
+      <form method="post" action="{% url 'dashboard:order_action' order.code 'catatan' %}" class="card stack">{% csrf_token %}
+        {% include "components/field.html" with field=note_form.note %}
+        <div><button class="btn btn--secondary btn--sm" type="submit">Simpan catatan</button></div>
+      </form>
+    </aside>
+  </div>
+</div>
+{% endblock %}

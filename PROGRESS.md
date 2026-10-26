@@ -11,8 +11,8 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 | 02 | Model data | ✅ selesai | 2026-10-26 | Semua model + services (harga, status, kuota, penyelesaian), seed, admin; 131 tes lulus |
 | 03 | Pengaturan & event | ✅ selesai | 2026-10-26 | Login + peran, beranda tugas, kelola event 6 tab (HTMX), duplikat, pengaturan, pengguna, log |
 | 04 | Form pesanan | ✅ selesai | 2026-10-26 | Detail event, form 4 langkah multi-tiket, ringkasan live, halaman sukses; diuji di browser |
-| 05 | Lacak & pembayaran | ⬜ belum | | |
-| 06 | Verifikasi & waiting list | ⬜ belum | | |
+| 05 | Lacak & pembayaran | ✅ selesai | 2026-10-26 | Lacak (kode+WA/token), upload bukti aman, berkas privat, batal, ubah pemegang, rekening refund |
+| 06 | Verifikasi & waiting list | ✅ selesai | 2026-10-26 | Daftar & detail pesanan, Lihat NIK (Owner), antrian verifikasi T/X/J/K, waiting list, hitung ulang, run_periodic |
 | 07 | Mode war & hasil | ⬜ belum | | |
 | 08 | Penyelesaian (refund, gelang, e-tiket) | ⬜ belum | | |
 | 09 | Kabar WA | ⬜ belum | | |
@@ -25,6 +25,17 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catatan
 
 ## Hasil tes terakhir
+
+- **2026-10-26, fase 05+06** — pytest di MariaDB: **186 lulus, 0 gagal** (+27 tes: akses lacak
+  benar/salah/rate limit/token kedaluwarsa, customer A ≠ B (pesanan & berkas), upload palsu / >10 MB /
+  EXIF terbuang / PDF, batal sebelum/sesudah fee, ubah pemegang ditolak sejak war, rekening refund
+  terenkripsi; daftar pesanan tanpa N+1, cari NIK lengkap, Lihat NIK hanya Owner + audit, verifikasi
+  terima/tolak via antrian, waiting list & lepas slot, hitung ulang, `run_periodic` idempoten).
+- **Uji browser** (Edge headless): customer di HP memilih **file asli** → pratinjau → kirim →
+  "Bukti fee sedang dicek"; admin di desktop membuka antrian (nominal diharapkan = klaim, gambar
+  bukti termuat) lalu menekan **tombol T** di keyboard → diterima → antrian kosong; "Lihat NIK";
+  halaman lacak customer berubah ke "Bayar pelunasan Rp 9.500.000". Tidak ada error JS. Diperbaiki:
+  form upload kini dilipat saat bukti sedang dicek, filter verifikasi sebaris, panel keuangan rapi.
 
 - **2026-10-26, fase 03+04** — pytest di MariaDB: **159 lulus, 0 gagal** (+28 tes baru:
   login/rate limit/peran/timeout, tab event & validasi publikasi, duplikat, pengaturan,
@@ -67,6 +78,22 @@ Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catata
 ## Pertanyaan terbuka
 
 (hal ambigu yang diputuskan sementara dengan `# ASUMSI:` — pemilik perlu mengonfirmasi)
+
+**Fase 05–06**
+
+24. `/berkas/…` dan `/lacak/<kode>/` tanpa izin menjawab **404** (bukan 403) agar tidak membocorkan keberadaan kode.
+25. Customer **boleh upload bukti tambahan** saat status "sedang dicek" (mis. transfer kedua). Bila nominal yang
+    sedang dicek sudah menutup tagihan, form dilipat ("Tidak perlu upload lagi").
+26. Rate limit upload **10 / jam / pesanan** menghitung semua percobaan (termasuk yang gagal validasi).
+27. **HEIC (foto iPhone) ditolak** dengan pesan ramah (kirim screenshot/JPG) — tidak menambah dependensi pillow-heif.
+28. Rekening refund **tidak bisa diubah customer** setelah refund pertama dicatat (hubungi admin).
+29. **Admin boleh membatalkan pesanan waiting list** (belum ada uang); pesanan berbayar hanya Owner.
+30. **Hitung ulang / ubah jumlah-kategori** hanya sebelum war; bila tagihan naik, status bisa mundur dari
+    Siap war ke Menunggu pelunasan/fee. Tambah tiket dicek terhadap kuota tahap.
+31. Ubah data pemegang oleh customer: NIK dikosongkan = tidak berubah; JASTIP hanya nama & WA.
+    Setelah war: hanya Owner, alasan wajib.
+32. `run_periodic` belum dijadwalkan otomatis (Scheduled Task dibuat installer, fase 13) — jalankan manual:
+    `.venv\Scripts\python manage.py run_periodic`. Pengingat & VA kedaluwarsa ditambahkan fase 07/09.
 
 **Fase 03–04**
 
@@ -124,6 +151,19 @@ dev: pytest 9.1.1, pytest-django 4.14.0, freezegun 1.5.5.
 Vendor JS: htmx 2.0.11, `@alpinejs/csp` 3.17.4. Font: Fredoka & Nunito (variable, latin + latin-ext, OFL).
 
 ## Catatan untuk fase berikutnya
+
+**Dari fase 05–06:**
+
+- `orders/services/guidance.py`: `next_action(order)` (teks "yang perlu dilakukan"), `payment_due(order)`
+  (jenis + nominal + batas; dipakai lacak, sukses, pembayaran manual), `expected_amounts(order, kind)` (verifikasi).
+- `orders/services/updates.py`: `update_holder`, `set_refund_account`, `save_admin_note` (audit tanpa NIK/rekening).
+- `transitions.recalculate_order`, `recalculate_preview`, `admin_update_line` (+ `RECALC_STATUSES`).
+- Akses customer: `apps/public/access.py` (`has_access`, `grant`; token di URL dicatat ke sesi 12 jam).
+- Upload: `core/uploads.py` (`process_private_upload` → gambar di-encode ulang JPEG ≤2000px tanpa EXIF, atau PDF;
+  `process_public_image`). Berkas privat: `/berkas/<bukti|etiket|foto|va>/<id>/` (admin / pemilik / tanda tangan
+  promotor `links.promotor_file_signature` untuk fase 10).
+- Alpine baru: `fileDrop` (upload + pratinjau data URL), `verifyPanel` (pintasan & zoom/putar), `payChoice`.
+- Alat uji browser kini punya langkah `file` (pilih file asli) dan `key` (tombol keyboard asli).
 
 **Dari fase 03–04:**
 
