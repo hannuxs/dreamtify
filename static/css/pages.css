@@ -39,3 +39,55 @@
   text-shadow: 4px 4px 0 var(--navy-900);
 }
 .error-page p { max-width: 44ch; color: var(--ink-600); }
+
+/* --- Kartu event --- */
+.grid--events { --grid-min: 260px; }
+.event-card { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.event-card__media { display: block; aspect-ratio: 4 / 5; background: var(--cloud-100); border-bottom: 2px solid var(--navy-900); }
+.event-card__media img { width: 100%; height: 100%; object-fit: cover; }
+.event-card__placeholder { display: grid; place-items: center; width: 100%; height: 100%; aspect-ratio: 4 / 5; background: var(--cloud-100); }
+.event-card__body { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4); flex: 1; }
+.event-card__body > .btn { margin-top: auto; }
+.event-card__title { font-size: 1.25rem; }
+.event-card__title a { color: var(--navy-900); text-decoration: none; }
+.event-card__meta { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-small); color: var(--ink-600); }
+.event-card__meta + .event-card__meta { margin-top: 0; }
+/* Maskot sebagai pengganti poster: tetap kecil di tengah */
+.event-card__placeholder img,
+.event-hero__poster .event-card__placeholder img {
+  width: 45%; height: auto; aspect-ratio: auto; object-fit: contain; border: 0; border-radius: 0; box-shadow: none;
+}
+
+/* --- Detail event --- */
+.preview-banner { display: flex; gap: var(--sp-2); align-items: center; justify-content: center; padding: var(--sp-2) var(--gutter);
+  background: var(--warning-bg); color: var(--warning); font-weight: 700; font-size: var(--fs-small); }
+.event-hero { padding-block: var(--sp-6) var(--sp-8); background: linear-gradient(180deg, var(--cloud-100), var(--cloud-50)); }
+.event-hero__inner { display: grid; gap: var(--sp-6); }
+@media (min-width: 768px) { .event-hero__inner { grid-template-columns: 320px 1fr; align-items: start; } }
+.event-hero__poster img, .event-hero__poster .event-card__placeholder { width: 100%; aspect-ratio: 4 / 5; object-fit: cover;
+  border-radius: var(--r-card); border: var(--border-sticker); box-shadow: var(--shadow-sticker); }
+@media (max-width: 767px) { .event-hero__poster { max-width: 280px; } }
+.meta-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); font-weight: 700; }
+.meta-list li { display: flex; gap: var(--sp-2); align-items: center; }
+.event-body { padding-block: var(--sp-6) var(--sp-16); }
+.schedule { display: grid; gap: var(--sp-3); }
+@media (min-width: 640px) { .schedule { grid-template-columns: 1fr 1fr; } }
+.schedule dt { font-size: var(--fs-small); color: var(--ink-600); font-weight: 700; }
+.schedule dd { margin: 0; font-weight: 800; }
+.price-grid { display: grid; gap: var(--sp-2); }
+@media (min-width: 640px) { .price-grid { grid-template-columns: 1fr 1fr; } }
+.price-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4); background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+.fee-cards { display: grid; gap: var(--sp-3); }
+@media (min-width: 640px) { .fee-cards { grid-template-columns: 1fr 1fr; } }
+.fee-card h3 { font-size: 1.25rem; }
+.fee-card dl { display: flex; flex-direction: column; gap: 4px; margin-top: var(--sp-2); }
+.fee-card dl div { display: flex; justify-content: space-between; border-top: 1px dashed var(--line); padding-top: 4px; }
+.fee-card dt { color: var(--ink-600); font-weight: 700; }
+.fee-card dd { margin: 0; font-weight: 800; }
+.note-list { padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; color: var(--ink-600); }
+.event-cta { position: sticky; bottom: 0; z-index: 30; background: var(--white); border-top: 2px solid var(--navy-900);
+  padding: var(--sp-3) 0 calc(var(--sp-3) + env(safe-area-inset-bottom)); }
+.event-cta__inner { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.event-cta__text { display: flex; flex-direction: column; line-height: 1.3; }
+.event-cta .btn[aria-disabled="true"] { opacity: 0.45; box-shadow: none; }

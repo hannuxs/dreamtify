@@ -1,0 +1,130 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}{{ event.name }} — {{ brand.name }}{% endblock %}
+{% block meta_description %}Jasa war &amp; jastip tiket {{ event.name }}{% if event.event_dates %}, {{ event.event_dates }}{% endif %}. Lihat pricelist, jadwal war, dan pesan di {{ brand.name }}.{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/pages.css' %}">{% if preview %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
+
+{% block content %}
+{% if preview %}
+  <div class="preview-banner" role="status">{% icon "info" %}<span><strong>Pratinjau</strong> — event masih {{ event.get_status_display|lower }}, hanya terlihat oleh admin.</span></div>
+{% endif %}
+
+<section class="event-hero">
+  <div class="container event-hero__inner">
+    <div class="event-hero__poster">
+      {% if event.poster %}<img src="{{ event.poster.url }}" alt="Poster {{ event.name }}" width="800" height="1000">
+      {% else %}<div class="event-card__placeholder"><img src="{% static 'img/cloud-happy.svg' %}" alt="" width="160" height="120"></div>{% endif %}
+    </div>
+    <div class="event-hero__info stack">
+      {% if event.artist %}<p class="eyebrow">{{ event.artist }}</p>{% endif %}
+      <h1 class="title-logo">{{ event.name }}</h1>
+      <ul class="meta-list">
+        <li>{% icon "calendar" %}<span>{{ event.event_dates|default:"Tanggal menyusul" }}</span></li>
+        {% if event.venue %}<li>{% icon "map-pin" %}<span>{{ event.venue }}{% if event.city %}, {{ event.city }}{% endif %}</span></li>{% endif %}
+        {% if event.ticketing_platform %}<li>{% icon "ticket" %}<span>Tiket via {{ event.ticketing_platform }}</span></li>{% endif %}
+      </ul>
+      {% if event.description %}<div class="prose">{{ event.description|linebreaks }}</div>{% endif %}
+    </div>
+  </div>
+</section>
+
+<div class="container stack stack-lg event-body">
+  {% if phases|length > 1 %}
+    <nav class="tabs" aria-label="Pilih tahap">
+      {% for p in phases %}
+        <a class="tabs__item{% if p == phase %} is-active{% endif %}" href="?tahap={{ p.pk }}"{% if p == phase %} aria-current="page"{% endif %}>{{ p.name }}</a>
+      {% endfor %}
+    </nav>
+  {% endif %}
+
+  {% if phase %}
+  <section class="card card--sticker stack" aria-labelledby="jadwal">
+    <div class="cluster cluster-between">
+      <h2 id="jadwal" class="card__title">Jadwal {{ phase.name }}</h2>
+      {% if accepts %}<span class="badge badge--success">Pemesanan buka</span>
+      {% elif phase.status == "WAR" %}<span class="badge badge--live">War berlangsung</span>
+      {% else %}<span class="badge badge--neutral">{{ phase.get_status_display }}</span>{% endif %}
+    </div>
+    <dl class="schedule">
+      {% if phase.war_at %}<div><dt>War</dt><dd>{{ phase.war_at|date:"l, j F Y · H.i" }} WIB<br>{% include "components/countdown.html" with target=phase.war_at %}</dd></div>{% endif %}
+      {% if phase.order_close_at %}<div><dt>Batas pesan</dt><dd>{{ phase.order_close_at|date:"D, j M Y · H.i" }} WIB</dd></div>{% endif %}
+      {% if phase.pelunasan_deadline %}<div><dt>Batas pelunasan (titip bayar)</dt><dd>{{ phase.pelunasan_deadline|date:"D, j M Y · H.i" }} WIB</dd></div>{% endif %}
+      {% if accepts %}<div><dt>Slot</dt><dd>{% if remaining is None %}Tersedia{% elif remaining > 0 %}Sisa ±{{ remaining }} slot{% else %}Kuota penuh — kamu akan masuk waiting list{% endif %}</dd></div>{% endif %}
+    </dl>
+    {% if phase.membership_required %}<p class="alert alert--info">{% icon "info" %}<span>Tahap ini wajib nomor membership (JASWAR).</span></p>{% endif %}
+  </section>
+  {% endif %}
+
+  <section class="stack" aria-labelledby="harga">
+    <h2 id="harga">Harga tiket</h2>
+    {% if categories %}
+      <div class="price-grid">
+        {% for c in categories %}
+          <div class="price-item">
+            <div><strong>{{ c.name }}</strong>{% if c.description %}<span class="text-small text-muted"> · {{ c.description }}</span>{% endif %}</div>
+            <div class="cluster"><span class="badge badge--{{ c.fee_tier|lower }}">{{ c.get_fee_tier_display }}</span><span class="money fw-bold">{{ c.price|rupiah }}</span></div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}<p class="text-muted">Harga menyusul.</p>{% endif %}
+  </section>
+
+  {% if phase and fee_rows %}
+  <section class="stack" aria-labelledby="fee">
+    <h2 id="fee">Fee jasa {{ phase.name }} <span class="text-muted text-small">(per tiket)</span></h2>
+    <div class="fee-cards">
+      {% for row in fee_rows %}
+        <article class="card fee-card">
+          <h3>{{ row.service }}</h3>
+          <p class="text-small text-muted">{{ row.hint }}</p>
+          <dl>{% for label, fee in row.fees %}<div><dt>{{ label }}</dt><dd class="money">{% if fee is not None %}{{ fee|rupiah }}{% else %}—{% endif %}</dd></div>{% endfor %}</dl>
+        </article>
+      {% endfor %}
+    </div>
+    <ul class="note-list text-small">
+      <li>Fee dihitung dari tier tertinggi di antara pilihan kategorimu; setelah war disesuaikan dengan kategori yang didapat.</li>
+      <li>Booking slot <strong>{{ event.booking_slot_fee|rupiah }}/tiket</strong> tidak dikembalikan bila tiket tidak didapat.</li>
+      {% if event.early_booking_per_ticket %}<li>Early booking (titip bayar) {{ event.early_booking_per_ticket|rupiah }}/tiket dibayar di awal &amp; mengurangi pelunasan.</li>{% endif %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="stack" aria-labelledby="syarat">
+    <h2 id="syarat">Syarat &amp; ketentuan</h2>
+    <div class="accordion">
+      <details class="accordion__item" open>
+        <summary><span>Aturan penting (wajib baca)</span>{% icon "chevron-down" %}</summary>
+        <div class="accordion__body">
+          <ul class="note-list">
+            <li>Fee jasa dibayar penuh di awal.</li>
+            <li>Batal = fee hangus. Uang harga tiket (titip bayar) dikembalikan.</li>
+            <li>Tiket tidak didapat = uang kembali 100% dikurangi booking slot per tiket.</li>
+            <li>Wajib pilih kategori utama + cadangan. Tim otomatis pindah ke cadangan tanpa konfirmasi{% if event.fallback_any_category %}; bila semua habis, tim boleh mengamankan kategori lain yang tersedia{% endif %}.</li>
+            <li>Bayar VA sendiri? Wajib standby saat war. Telat bayar VA = tiket hangus &amp; fee tidak kembali.</li>
+          </ul>
+        </div>
+      </details>
+      {% if event.terms %}
+        <details class="accordion__item">
+          <summary><span>Syarat khusus event ini</span>{% icon "chevron-down" %}</summary>
+          <div class="accordion__body">{{ event.terms|linebreaks }}</div>
+        </details>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<div class="event-cta">
+  <div class="container event-cta__inner">
+    {% if accepts %}
+      <div class="event-cta__text"><strong>{{ phase.name }}</strong><span class="text-small">{% if quota_full %}Kuota penuh — masuk waiting list{% else %}Pemesanan buka{% endif %}</span></div>
+      <a class="btn btn--primary btn--lg" href="{% url 'public:order_form' event.slug %}?tahap={{ phase.pk }}"><span>{% if quota_full %}Masuk waiting list{% else %}Pesan sekarang{% endif %}</span>{% icon "arrow-right" %}</a>
+    {% else %}
+      <div class="event-cta__text"><strong>Pemesanan belum/tidak dibuka</strong>
+        <span class="text-small">{% if phase and phase.order_open_at and phase.order_open_at > now %}Buka {{ phase.order_open_at|date:"D, j M H.i" }} WIB{% elif phase and phase.status == "WAR" %}War sedang berlangsung{% else %}Pantau IG kami untuk info berikutnya{% endif %}</span></div>
+      <span class="btn btn--primary btn--lg" aria-disabled="true">Pesan sekarang</span>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

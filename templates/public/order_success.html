@@ -1,0 +1,99 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}Pesanan {{ order.code }} — {{ brand.name }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/order.css' %}"><meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="container container-narrow success stack stack-lg" x-data="draftClear" data-key="{{ draft_key }}">
+  <header class="success__hero">
+    <img src="{% static 'img/cloud-happy.svg' %}" alt="" width="160" height="120">
+    <h1 class="title-logo">Pesanan kamu tercatat! 🎉</h1>
+    <p class="text-muted">{{ order.event.name }} · {{ order.phase.name }} · {{ tickets }} tiket</p>
+    <div class="success__code">
+      <span class="text-small text-muted">Kode pesanan</span>
+      <strong class="code">{{ order.code }}</strong>
+      {% include "components/copy_button.html" with value=order.code label="Salin kode" toast="Kode pesanan tersalin ✓" %}
+    </div>
+    <span class="badge badge--{{ order.status|status_tone }}">{{ order.get_status_display }}</span>
+  </header>
+
+  {% if waiting %}
+    <section class="card card--highlight stack">
+      <h2 class="card__title">Kamu masuk waiting list</h2>
+      <p>Kuota sedang penuh, jadi <strong>belum perlu bayar apa pun</strong>. Begitu ada slot, kami kabari lewat WhatsApp
+        dan kamu punya waktu untuk membayar fee.</p>
+    </section>
+  {% elif awaiting_fee %}
+    <section class="card card--sticker stack" {% if titip %}x-data="payChoice"{% endif %}>
+      <h2 class="card__title">Transfer sekarang</h2>
+      {% if titip %}
+        <div class="segmented" role="radiogroup" aria-label="Pilih nominal">
+          <label><input type="radio" name="bayar" value="fee" x-model="choice"><span>Bayar fee saja</span></label>
+          <label><input type="radio" name="bayar" value="full" x-model="choice"><span>Bayar sekaligus</span></label>
+        </div>
+        <div class="copy-row" x-show="isFee">
+          <div><div class="text-small text-muted">Fee jasa</div><div class="copy-row__value">{{ summary.initial_due|rupiah }}</div></div>
+          {% include "components/copy_button.html" with value=summary.initial_due|stringformat:"d" label="Salin angka" toast="Nominal tersalin ✓" %}
+        </div>
+        <div class="copy-row" x-show="isFull" x-cloak>
+          <div><div class="text-small text-muted">Fee + pelunasan tiket</div><div class="copy-row__value">{{ summary.total_before_war|rupiah }}</div></div>
+          {% include "components/copy_button.html" with value=summary.total_before_war|stringformat:"d" label="Salin angka" toast="Nominal tersalin ✓" %}
+        </div>
+        <p class="text-small text-muted" x-show="isFee">Pelunasan {{ summary.pelunasan_due|rupiah }} dibayar nanti{% if order.phase.pelunasan_deadline %}, paling lambat {{ order.phase.pelunasan_deadline|date:"D, j M H.i" }} WIB{% endif %}.</p>
+        <p class="text-small text-muted" x-show="isFull" x-cloak>Sekali transfer, langsung siap war. Selisih harga kategori dikembalikan setelah war.</p>
+      {% else %}
+        <div class="copy-row">
+          <div><div class="text-small text-muted">Fee jasa</div><div class="copy-row__value">{{ summary.initial_due|rupiah }}</div></div>
+          {% include "components/copy_button.html" with value=summary.initial_due|stringformat:"d" label="Salin angka" toast="Nominal tersalin ✓" %}
+        </div>
+        <p class="text-small text-muted">Harga tiket kamu bayar sendiri lewat VA saat war — wajib standby ya, kak.</p>
+      {% endif %}
+      {% if order.unique_discount %}<p class="text-small">Nominal sudah dipotong kode unik <strong>{{ order.unique_discount }}</strong> — transfer persis sesuai angka di atas.</p>{% endif %}
+
+      {% if order.fee_deadline %}
+        <div class="cluster"><span class="text-small">Batas bayar fee: <strong>{{ order.fee_deadline|date:"D, j M Y H.i" }} WIB</strong></span>
+          {% include "components/countdown.html" with target=order.fee_deadline prefix="Sisa" done="Lewat batas" %}</div>
+      {% endif %}
+
+      <h3 class="text-small fw-bold mt-2">Rekening tujuan</h3>
+      {% for acc in accounts %}
+        <div class="copy-row">
+          <div><div class="text-small text-muted">{{ acc.bank_name }} a.n. {{ acc.account_holder }}</div><div class="copy-row__value num">{{ acc.account_number }}</div></div>
+          {% include "components/copy_button.html" with value=acc.account_number label="Salin nomor" toast="Nomor rekening tersalin ✓" %}
+        </div>
+      {% empty %}
+        <p class="alert alert--warning">{% icon "alert" %}<span>Rekening belum diatur. Hubungi admin lewat WhatsApp.</span></p>
+      {% endfor %}
+
+      <div class="cluster">
+        <a class="btn btn--primary" href="{{ tracking_path }}">{% icon "upload" %}<span>Upload bukti sekarang</span></a>
+        <a class="btn btn--ghost" href="{% url 'public:event_detail' order.event.slug %}">Nanti saja</a>
+      </div>
+      <p class="text-small text-muted">Lewat batas bayar fee, pesanan otomatis dibatalkan (belum ada uang yang ditahan).</p>
+    </section>
+  {% endif %}
+
+  <section class="card stack">
+    <h2 class="card__title">Simpan link lacak</h2>
+    <p class="text-small text-muted">Pantau status, upload bukti, dan lihat hasil war lewat link ini (berlaku 30 hari). Bisa juga masuk dengan kode pesanan + nomor WA.</p>
+    <div class="copy-row"><code class="copy-row__link">{{ tracking_url }}</code>
+      {% include "components/copy_button.html" with value=tracking_url label="Salin link" toast="Link lacak tersalin ✓" %}</div>
+    <a class="btn btn--secondary" href="{% wa_link order.buyer_whatsapp wa_text %}" target="_blank" rel="noopener">{% icon "chat" %}<span>Kirim link ini ke WhatsApp saya</span></a>
+  </section>
+
+  <section class="card stack">
+    <h2 class="card__title">Tiket kamu</h2>
+    <ul class="ticket-list">
+      {% for line in order.lines.all %}
+        <li><strong>{{ line.holder_name }}</strong> · {{ line.service_type }} · {{ line.quantity }} tiket
+          <span class="text-small text-muted">{{ line.cat_primary.name }}{% if line.cat_backup1 %} / {{ line.cat_backup1.name }}{% endif %}{% if line.cat_backup2 %} / {{ line.cat_backup2.name }}{% endif %}{% if line.holder_nik_last4 %} · KTP {{ line.nik_masked }}{% endif %}</span></li>
+      {% endfor %}
+    </ul>
+    <dl class="summary__totals">
+      <div><dt>Tagihan awal (fee)</dt><dd class="money">{{ summary.initial_due|rupiah }}</dd></div>
+      {% if titip %}<div><dt>Pelunasan (titip bayar)</dt><dd class="money">{{ summary.pelunasan_due|rupiah }}</dd></div>{% endif %}
+    </dl>
+  </section>
+</div>
+{% endblock %}

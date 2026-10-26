@@ -1,0 +1,52 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Pengaturan{% endblock %}
+{% block page_title %}Pengaturan{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <h1 class="page-title">Pengaturan</h1>
+  <nav class="tabs" aria-label="Bagian pengaturan">
+    {% for key, label in tabs %}
+      <a class="tabs__item{% if key == tab %} is-active{% endif %}" href="{% url 'dashboard:settings_tab' key %}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  <div id="tab-panel" class="stack">
+    {% if tab == "template" %}
+      {% include "components/empty_state.html" with mascot="sleep" title="Segera hadir" text="Pengaturan template pesan WhatsApp dibangun bersama Kotak Kabar." %}
+    {% elif formset %}
+      <form method="post" class="stack" novalidate hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {% for e in formset.non_form_errors %}<div class="alert alert--danger">{% icon "alert" %}<span>{{ e }}</span></div>{% endfor %}
+        {% if tab == "rekening" %}<p class="text-muted text-small">Rekening tujuan transfer customer. Yang aktif tampil di halaman sukses &amp; tagihan.</p>{% endif %}
+        {% if tab == "faq" %}<p class="text-muted text-small">Urutan kecil tampil lebih dulu. Lima teratas muncul di beranda.</p>{% endif %}
+        {% for form in formset %}
+          <fieldset class="card stack row-card{% if not form.instance.pk %} row-card--new{% endif %}">
+            <legend class="row-card__title">{% if form.instance.pk %}{{ form.instance }}{% else %}Tambah baru <span class="text-muted text-small">(kosongkan bila tidak perlu)</span>{% endif %}</legend>
+            {{ form.id }}
+            <div class="form-grid">
+              {% for field in form.visible_fields %}{% if field.name != "DELETE" %}{% include "components/field.html" with field=field %}{% endif %}{% endfor %}
+            </div>
+            {% if form.instance.pk %}<label class="check check--danger">{{ form.DELETE }}<span>Hapus</span></label>{% endif %}
+          </fieldset>
+        {% endfor %}
+        <div class="form-actions"><button class="btn btn--primary" type="submit"><span>Simpan</span><span class="btn__spinner" aria-hidden="true"></span></button></div>
+      </form>
+    {% else %}
+      <form method="post" class="card stack" novalidate hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+        {% csrf_token %}
+        {% include "components/form_errors.html" %}
+        <div class="form-grid">
+          {% for field in form %}{% include "components/field.html" with field=field wide=True %}{% endfor %}
+        </div>
+        {% if tab == "aturan" %}<p class="text-small text-muted">Nilai default dipakai saat membuat event baru; tiap event tetap bisa diubah di tab Aturan event.
+          Kredensial email (SMTP) diatur di file <code>.env</code>.</p>{% endif %}
+        <div class="form-actions"><button class="btn btn--primary" type="submit"><span>Simpan</span><span class="btn__spinner" aria-hidden="true"></span></button></div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

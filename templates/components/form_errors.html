@@ -1,0 +1,1 @@
+{% load ui %}{% if form.non_field_errors %}<div class="alert alert--danger" role="alert">{% icon "alert" %}<div>{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div></div>{% endif %}

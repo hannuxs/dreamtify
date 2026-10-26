@@ -1,0 +1,15 @@
+{% comment %}
+Satu field form: label, input, petunjuk, error (terhubung aria-describedby).
+Parameter: field (BoundField), wide (True → lebar penuh di grid)
+{% endcomment %}{% if field.is_hidden %}{{ field }}{% else %}<div class="field{% if wide %} field--wide{% endif %}{% if field.errors %} has-error{% endif %}">
+  {% if field.widget_type == "checkbox" %}
+    <label class="check">{{ field }}<span>{{ field.label }}</span></label>
+  {% elif field.widget_type == "checkboxselectmultiple" or field.widget_type == "radioselect" %}
+    <fieldset class="choices"><legend class="field__label">{{ field.label }}</legend>{{ field }}</fieldset>
+  {% else %}
+    <label class="field__label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req" aria-hidden="true"> *</span>{% endif %}</label>
+    {{ field }}
+  {% endif %}
+  {% if field.help_text %}<span class="field__hint">{{ field.help_text }}</span>{% endif %}
+  {% for error in field.errors %}<span class="field__error" id="{{ field.html_name }}-error">{{ error }}</span>{% endfor %}
+</div>{% endif %}

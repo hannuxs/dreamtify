@@ -1,0 +1,124 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}Pesan {{ event.name }} — {{ brand.name }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/order.css' %}"><meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="container order-page">
+  <a class="back-link" href="{% url 'public:event_detail' event.slug %}?tahap={{ phase.pk }}">← {{ event.name }}</a>
+  <h1 class="order-page__title">Pesan tiket <span class="text-pink">{{ phase.name }}</span></h1>
+  {% if remaining is not None and remaining <= 0 %}
+    <p class="alert alert--warning">{% icon "hourglass" %}<span>Kuota sedang penuh. Pesananmu akan masuk <strong>waiting list</strong> — belum perlu bayar sampai dapat slot.</span></p>
+  {% endif %}
+
+  <form id="order-form" class="order-form" method="post" novalidate
+        x-data="orderForm" data-max-lines="{{ lines|length }}" data-initial-step="{{ initial_step }}"
+        data-draft-key="dt-draft:{{ event.slug }}:{{ phase.pk }}" data-restore="{{ restore_draft|yesno:'1,0' }}"
+        data-default-service="{{ lines.0.service }}"
+        @submit="onSubmit" @lineschanged="renumber">
+    {% csrf_token %}
+    <input type="hidden" name="phase" value="{{ phase.pk }}">
+    <input type="hidden" name="form_token" value="{{ form_token }}">
+    <div class="hp-field" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+
+    <ol class="stepper order-stepper">
+      <li :class="d1" :aria-current="c1"><button type="button" data-step="1" @click="goStep">Data pemesan</button></li>
+      <li :class="d2" :aria-current="c2"><button type="button" data-step="2" @click="goStep">Tiket</button></li>
+      <li :class="d3" :aria-current="c3"><button type="button" data-step="3" @click="goStep">Pembayaran</button></li>
+      <li :class="d4" :aria-current="c4"><button type="button" data-step="4" @click="goStep">Cek &amp; setuju</button></li>
+    </ol>
+
+    {% if general_errors %}
+      <div class="alert alert--danger" role="alert">{% icon "alert" %}<div>{% for e in general_errors %}<p>{{ e }}</p>{% endfor %}</div></div>
+    {% endif %}
+
+    <div class="order-layout">
+      <div class="order-main">
+
+        {# ---------------- Langkah 1: Data pemesan ---------------- #}
+        <section class="order-step card stack" x-ref="step1" x-show="s1" aria-labelledby="judul-1">
+          <h2 id="judul-1" class="order-step__title"><span class="order-step__num">1</span>Data pemesan</h2>
+          {% include "components/form_errors.html" with form=buyer %}
+          <div class="form-grid">
+            {% include "components/field.html" with field=buyer.name wide=True %}
+            {% include "components/field.html" with field=buyer.whatsapp %}
+            {% include "components/field.html" with field=buyer.email %}
+            {% include "components/field.html" with field=buyer.instagram %}
+            {% include "components/field.html" with field=buyer.referral %}
+          </div>
+          {% if phases|length > 1 %}
+            <div class="field">
+              <span class="field__label">Tahap</span>
+              <div class="cluster">{% for p in phases %}<a class="chip{% if p == phase %} chip--active{% endif %}" href="?tahap={{ p.pk }}">{{ p.name }}</a>{% endfor %}</div>
+            </div>
+          {% endif %}
+        </section>
+
+        {# ---------------- Langkah 2: Tiket ---------------- #}
+        <section class="order-step stack" x-ref="step2" x-show="s2" x-cloak aria-labelledby="judul-2">
+          <h2 id="judul-2" class="order-step__title"><span class="order-step__num">2</span>Tiket</h2>
+          <p class="text-small text-muted">Satu kartu = satu pemegang tiket. Mau beda kategori atau beliin teman? Tambah tiket.</p>
+          <div class="lines" :data-count="activeCount">
+            {% for line in lines %}{% include "public/_line_card.html" %}{% endfor %}
+          </div>
+          <button type="button" class="btn btn--secondary btn--block" @click="addLine" x-show="canAdd">{% icon "ticket" %}<span>+ Tambah tiket untuk kategori/orang lain</span></button>
+        </section>
+
+        {# ---------------- Langkah 3: Pembayaran ---------------- #}
+        <section class="order-step card stack" x-ref="step3" x-show="s3" x-cloak aria-labelledby="judul-3">
+          <h2 id="judul-3" class="order-step__title"><span class="order-step__num">3</span>Pembayaran tiket</h2>
+          <p class="text-small text-muted">Fee jasa selalu dibayar di awal ke rekening Dreamtify. Pilih cara membayar <strong>harga tiket</strong>:</p>
+          <div class="choice-list" role="radiogroup" aria-label="Metode bayar tiket">
+            {% for value, label, hint in payment_options %}
+              <label class="choice-card choice-card--row">
+                <input type="radio" name="pay-payment_method" value="{{ value }}" data-label="{{ label }}" required
+                       {% if pay.payment_method.value == value %}checked{% endif %}>
+                <span class="choice-card__body"><span class="choice-card__title">{{ label }}</span><span class="choice-card__hint">{{ hint }}{% if value == "TITIP_BAYAR" and phase.pelunasan_deadline %} Paling lambat {{ phase.pelunasan_deadline|date:"D, j M H.i" }} WIB.{% endif %}</span></span>
+              </label>
+            {% endfor %}
+          </div>
+          {% for e in pay.payment_method.errors %}<span class="field__error">{{ e }}</span>{% endfor %}
+        </section>
+
+        {# ---------------- Langkah 4: Cek & setuju ---------------- #}
+        <section class="order-step card stack" x-ref="step4" x-show="s4" x-cloak aria-labelledby="judul-4">
+          <h2 id="judul-4" class="order-step__title"><span class="order-step__num">4</span>Cek &amp; setuju</h2>
+          <dl class="review">
+            <template x-for="row in review" :key="row.key">
+              <div :class="row.cls"><dt x-text="row.label"></dt><dd x-text="row.value"></dd></div>
+            </template>
+          </dl>
+          <div class="stack stack-sm">
+            {% include "components/field.html" with field=agree.agree_terms %}
+            {% include "components/field.html" with field=agree.agree_privacy %}
+          </div>
+          <p class="text-small text-muted">Baca <a href="{% url 'public:event_detail' event.slug %}#syarat" target="_blank">syarat event</a> sebelum mengirim.</p>
+        </section>
+
+        <div class="order-nav">
+          <button type="button" class="btn btn--ghost" @click="prev" x-show="hasPrev" x-cloak>← Kembali</button>
+          <button type="button" class="btn btn--primary" @click="next" x-show="hasNext"><span>Lanjut</span>{% icon "arrow-right" %}</button>
+          <button type="submit" class="btn btn--primary btn--lg" x-show="s4" x-cloak :disabled="submitting" :class="submitClass">
+            <span>Kirim pesanan</span><span class="btn__spinner" aria-hidden="true"></span></button>
+        </div>
+        <p class="text-center text-small"><button type="button" class="link-button" @click="clearDraft">Kosongkan form</button></p>
+      </div>
+
+      <aside class="order-summary" aria-label="Ringkasan biaya">
+        <div id="ringkasan" class="card summary" aria-live="polite"
+             hx-post="{% url 'public:order_quote' event.slug %}" hx-trigger="load, change from:#order-form delay:250ms, lineschanged from:body delay:150ms"
+             hx-swap="innerHTML">
+          <p class="text-muted text-small">Menghitung ringkasan biaya…</p>
+        </div>
+      </aside>
+    </div>
+
+    <div class="order-bar">
+      <div><div class="bottom-bar__label">Tagihan sekarang</div><div class="bottom-bar__value" id="bar-total">–</div></div>
+      <button type="button" class="btn btn--primary" @click="next" x-show="hasNext"><span>Lanjut</span>{% icon "arrow-right" %}</button>
+      <button type="submit" class="btn btn--primary" x-show="s4" x-cloak :disabled="submitting"><span>Kirim</span></button>
+    </div>
+  </form>
+</div>
+{% endblock %}

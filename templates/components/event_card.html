@@ -1,0 +1,25 @@
+{% load static ui %}{% comment %}
+Kartu event (docs/06 §4). Parameter: event, phase, open (bool), remaining (int|None)
+{% endcomment %}<article class="event-card card card--sticker">
+  <a class="event-card__media" href="{% url 'public:event_detail' event.slug %}" tabindex="-1" aria-hidden="true">
+    {% if event.poster %}<img src="{{ event.poster.url }}" alt="" width="400" height="500" loading="lazy">
+    {% else %}<span class="event-card__placeholder"><img src="{% static 'img/cloud-happy.svg' %}" alt="" width="120" height="90"></span>{% endif %}
+  </a>
+  <div class="event-card__body">
+    <div class="cluster">
+      {% if open %}<span class="badge badge--pink">{{ phase.name }} buka</span>
+      {% elif phase.status == "WAR" %}<span class="badge badge--live">War berlangsung</span>
+      {% else %}<span class="badge badge--info">{{ phase.name }} {{ phase.get_status_display|lower }}</span>{% endif %}
+    </div>
+    <h3 class="event-card__title"><a href="{% url 'public:event_detail' event.slug %}">{{ event.name }}</a></h3>
+    <p class="event-card__meta">{% icon "calendar" %}<span>{{ event.event_dates|default:"Tanggal menyusul" }}</span></p>
+    {% if event.venue %}<p class="event-card__meta">{% icon "map-pin" %}<span>{{ event.venue }}{% if event.city %}, {{ event.city }}{% endif %}</span></p>{% endif %}
+    <div class="cluster">
+      {% if phase.war_at %}{% include "components/countdown.html" with target=phase.war_at %}{% endif %}
+      {% if open and remaining is not None %}
+        {% if remaining > 0 %}<span class="chip">Sisa ±{{ remaining }} slot</span>{% else %}<span class="chip">Waiting list</span>{% endif %}
+      {% endif %}
+    </div>
+    <a class="btn btn--primary btn--block" href="{% url 'public:event_detail' event.slug %}"><span>Lihat event</span>{% icon "arrow-right" %}</a>
+  </div>
+</article>

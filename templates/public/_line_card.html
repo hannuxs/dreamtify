@@ -1,0 +1,71 @@
+{% load ui %}{% with form=line.form i=line.index %}
+<fieldset class="line-card card" x-data="lineCard" data-index="{{ i }}" data-active="{{ line.active|yesno:'1,0' }}"
+          data-service="{{ line.service }}" data-qty="{{ line.quantity }}" data-max="{{ event.max_tickets_per_holder }}"
+          :data-active="activeAttr" x-show="active" :disabled="inactive"
+          @line-activate.window="activate"{% if not line.active %} x-cloak disabled{% endif %}>
+  <legend class="visually-hidden">Tiket {{ i|add:1 }}</legend>
+  <div class="line-card__head">
+    <h3 class="line-card__title">{% icon "ticket" %}<span>Tiket #<span class="js-line-number">{{ i|add:1 }}</span></span></h3>
+    <button type="button" class="btn btn--ghost btn--sm line-card__remove" @click="remove">{% icon "x" %}<span>Hapus</span></button>
+  </div>
+  {% for e in form.non_field_errors %}<p class="field__error">{{ e }}</p>{% endfor %}
+
+  {# Layanan #}
+  <div class="choice-grid" role="radiogroup" aria-label="Layanan tiket {{ i|add:1 }}">
+    {% for value, label in form.fields.service_type.choices %}
+      <label class="choice-card">
+        <input type="radio" name="lines-{{ i }}-service_type" value="{{ value }}" x-model="service" @change="changed">
+        <span class="choice-card__body"><span class="choice-card__title">{{ value }}</span>
+          <span class="choice-card__hint">{{ service_hints|get_item:value }}</span></span>
+      </label>
+    {% endfor %}
+  </div>
+
+  {# Jumlah #}
+  <div class="field">
+    <label class="field__label" for="id_lines-{{ i }}-quantity">Jumlah tiket</label>
+    <div class="qty">
+      <button type="button" class="qty__btn" @click="dec" aria-label="Kurangi">−</button>
+      <input class="input qty__input num" type="number" id="id_lines-{{ i }}-quantity" name="lines-{{ i }}-quantity"
+             min="1" max="{{ event.max_tickets_per_holder }}" inputmode="numeric" x-model.number="qty" @change="changed" required>
+      <button type="button" class="qty__btn" @click="inc" aria-label="Tambah">+</button>
+    </div>
+    {% for e in form.quantity.errors %}<span class="field__error">{{ e }}</span>{% endfor %}
+  </div>
+
+  {# Kategori #}
+  <div class="form-grid form-grid--3">
+    {% include "components/field.html" with field=form.primary %}
+    {% include "components/field.html" with field=form.backup1 %}
+    {% include "components/field.html" with field=form.backup2 %}
+  </div>
+  {% if i > 0 %}<button type="button" class="link-button text-small" @click="copyPrevious">{% icon "copy" %} Salin kategori dari tiket sebelumnya</button>{% endif %}
+
+  {# Pemegang tiket #}
+  <div class="holder stack">
+    <div class="cluster cluster-between">
+      <h4 class="holder__title">Data pemegang tiket</h4>
+      <label class="check text-small"><input type="checkbox" name="lines-{{ i }}-same_as_buyer" @change="fillFromBuyer"{% if form.same_as_buyer.value %} checked{% endif %}><span>Pemegang = saya</span></label>
+    </div>
+    <p class="text-small text-muted" x-show="isJastip">JASTIP memakai data tim. Cukup nama &amp; WA penerima gelang.</p>
+    <div class="form-grid">
+      {% include "components/field.html" with field=form.holder_name %}
+      {% include "components/field.html" with field=form.holder_whatsapp %}
+    </div>
+    <fieldset class="form-grid jaswar-fields" x-show="isJaswar" :disabled="isJastip">
+      <legend class="visually-hidden">Data KTP (JASWAR)</legend>
+      <div class="field{% if form.holder_nik.errors %} has-error{% endif %}">
+        <label class="field__label" for="{{ form.holder_nik.id_for_label }}">{{ form.holder_nik.label }}<span class="req" aria-hidden="true"> *</span></label>
+        {{ form.holder_nik }}
+        <span class="field__hint">Dipakai untuk pembelian tiket, disimpan terenkripsi.{% if form.is_bound %} Demi keamanan, ketik ulang.{% endif %}</span>
+        {% for e in form.holder_nik.errors %}<span class="field__error" id="{{ form.holder_nik.html_name }}-error">{{ e }}</span>{% endfor %}
+      </div>
+      {% include "components/field.html" with field=form.holder_birth_date %}
+      {% include "components/field.html" with field=form.holder_gender %}
+      {% include "components/field.html" with field=form.holder_email %}
+      {% include "components/field.html" with field=form.holder_instagram %}
+      {% if phase.membership_required %}{% include "components/field.html" with field=form.holder_membership_no %}{% endif %}
+    </fieldset>
+  </div>
+</fieldset>
+{% endwith %}

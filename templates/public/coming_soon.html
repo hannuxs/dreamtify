@@ -27,4 +27,17 @@
     <img class="soon__mascot" src="{% static 'img/cloud-happy.svg' %}" alt="" width="200" height="150">
   </div>
 </section>
+
+<section class="section" id="event" aria-labelledby="event-title">
+  <div class="container stack">
+    <h2 id="event-title" class="text-center">Event yang sedang buka</h2>
+    {% if cards %}
+      <div class="grid grid--events">
+        {% for c in cards %}{% include "components/event_card.html" with event=c.event phase=c.phase open=c.open remaining=c.remaining %}{% endfor %}
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with mascot="sleep" title="Belum ada event" text="Pantau IG kami ya, kak. Event baru diumumkan di sana." %}
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

@@ -56,6 +56,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.dashboard.middleware.AdminIdleTimeoutMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -135,6 +136,14 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+
+LOGIN_URL = "/kelola/login/"
+LOGIN_REDIRECT_URL = "/kelola/"
+# Sesi: admin di-set 8 jam saat login (+ logout bila tidak aktif 2 jam, lihat
+# apps/dashboard/middleware.py). Akses lacak customer 12 jam (fase 05).
+SESSION_COOKIE_AGE = 12 * 60 * 60
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
 
 # ---------------------------------------------------------------------------
 # Bahasa & waktu — simpan UTC, tampilkan WIB

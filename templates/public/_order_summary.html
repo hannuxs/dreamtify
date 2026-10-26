@@ -1,0 +1,27 @@
+{% load ui %}<h2 class="summary__title">Ringkasan biaya</h2>
+{% if error %}<p class="alert alert--warning">{% icon "alert" %}<span>{{ error }}</span></p>{% endif %}
+<ul class="summary__lines">
+  {% for row in rows %}
+    <li>
+      <span class="summary__label">Tiket #{{ row.number }} · {{ row.service }} · {{ row.qty }} tiket</span>
+      {% if row.pending %}<span class="text-muted text-small">pilih kategori</span>
+      {% elif row.quote %}<span class="money">{{ row.quote.fee_total|rupiah }}</span>
+        <span class="summary__sub text-small text-muted">Fee {{ row.quote.fee_per_ticket|rupiah }}/tiket ({{ row.quote.tier|lower }}){% if titip %} · harga dasar {{ row.quote.price_basis_per_ticket|rupiah }}{% endif %}</span>
+      {% endif %}
+    </li>
+  {% empty %}
+    <li class="text-muted text-small">Belum ada tiket.</li>
+  {% endfor %}
+</ul>
+{% if quote %}
+  <dl class="summary__totals">
+    {% if quote.early_total %}<div><dt>Early booking</dt><dd class="money">{{ quote.early_total|rupiah }}</dd></div>{% endif %}
+    <div class="summary__now"><dt>Tagihan sekarang <small>(fee jasa{% if quote.early_total %} + early booking{% endif %})</small></dt><dd class="money">{{ quote.initial_due|rupiah }}</dd></div>
+    {% if titip %}<div><dt>Pelunasan nanti <small>(harga tiket, titip bayar)</small></dt><dd class="money">{{ quote.pelunasan_due|rupiah }}</dd></div>{% endif %}
+  </dl>
+  {% if event.unique_code_enabled %}<p class="text-small text-muted">Ada potongan kode unik kecil yang muncul setelah pesanan dibuat.</p>{% endif %}
+  {% if titip %}<p class="text-small text-muted">Pelunasan memakai harga kategori termahal pilihanmu. Selisihnya dikembalikan setelah war.</p>
+  {% elif method %}<p class="text-small text-muted">Harga tiket kamu bayar sendiri lewat VA saat war.</p>
+  {% else %}<p class="text-small text-muted">Pilih metode bayar tiket di langkah 3.</p>{% endif %}
+{% endif %}
+<span id="bar-total" class="bottom-bar__value" hx-swap-oob="true">{% if quote %}{{ quote.initial_due|rupiah }}{% else %}–{% endif %}</span>

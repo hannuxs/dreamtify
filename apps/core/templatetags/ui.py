@@ -29,6 +29,32 @@ RESULT_TONES = {
 }
 
 
+@register.simple_tag
+def wa_link(number, text=""):
+    """https://wa.me/62…?text=… (teks di-URL-encode, nomor tanpa '+')."""
+    from urllib.parse import quote
+
+    number = "".join(ch for ch in str(number or "") if ch.isdigit())
+    return f"https://wa.me/{number}" + (f"?text={quote(text)}" if text else "")
+
+
+@register.filter
+def get_item(mapping, key):
+    """{{ dict|get_item:key }}"""
+    try:
+        return mapping.get(key, "")
+    except AttributeError:
+        return ""
+
+
+@register.filter
+def thousands(value):
+    """{{ 3500000|thousands }} → 3.500.000 (tanpa 'Rp')."""
+    from apps.core.forms import format_thousands
+
+    return format_thousands(value)
+
+
 @register.filter
 def rupiah(value):
     """{{ 1250000|rupiah }} → Rp 1.250.000"""

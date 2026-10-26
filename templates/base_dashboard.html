@@ -9,53 +9,41 @@
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <a class="skip-link" href="#konten">Langsung ke konten</a>
-  {% comment %}
-    ASUMSI: menu ditulis statis dulu; semua item tampil "segera" sampai halamannya
-    dibangun (fase 03+). Fase 03 menjadikannya data-driven + cek peran Owner.
-  {% endcomment %}
   <div class="dash">
     <aside class="dash-sidebar" aria-label="Navigasi admin">
-      <a class="dash-sidebar__brand" href="/kelola/" aria-label="Beranda admin">
+      <a class="dash-sidebar__brand" href="{% url 'dashboard:home' %}" aria-label="Beranda admin">
         <img src="{% static 'img/logo-dreamtify-crop.png' %}" alt="{{ brand.name }}" width="338" height="214">
       </a>
       <nav class="dash-nav">
-        {% block sidebar_nav %}
-        <span class="is-soon">{% icon "home" %}Beranda tugas<span class="soon-tag">segera</span></span>
-        <p class="dash-nav__group">Operasional</p>
-        <span class="is-soon">{% icon "calendar" %}Event<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "list" %}Pesanan<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "check-circle" %}Verifikasi<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "hourglass" %}Waiting list<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "bolt" %}Mode War<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "receipt" %}Penyelesaian<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "gift" %}Penyerahan<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "megaphone" %}Kotak Kabar<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "download" %}Rekap &amp; Ekspor<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "star" %}Testimoni<span class="soon-tag">segera</span></span>
-        <p class="dash-nav__group">Owner</p>
-        <span class="is-soon">{% icon "settings" %}Pengaturan<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "users" %}Pengguna<span class="soon-tag">segera</span></span>
-        <span class="is-soon">{% icon "list" %}Log aktivitas<span class="soon-tag">segera</span></span>
-        {% endblock %}
+        {% regroup nav.items by group as groups %}
+        {% for group in groups %}
+          {% if group.grouper %}<p class="dash-nav__group">{{ group.grouper }}</p>{% endif %}
+          {% for item in group.list %}
+            {% if item.url %}
+              <a href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{% icon item.icon %}{{ item.label }}</a>
+            {% else %}
+              <span class="is-soon" title="Segera hadir">{% icon item.icon %}{{ item.label }}<span class="soon-tag">segera</span></span>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
       </nav>
       <div class="dash-sidebar__foot">
-        <a class="btn btn--ghost btn--sm btn--block" href="/" target="_blank" rel="noopener"><span>Lihat web publik</span>{% icon "arrow-right" %}</a>
+        <a class="dash-sidebar__link" href="/" target="_blank" rel="noopener">{% icon "arrow-right" %}Lihat web publik</a>
+        <form method="post" action="{% url 'dashboard:logout' %}">{% csrf_token %}
+          <button class="dash-sidebar__link" type="submit">{% icon "logout" %}Keluar</button>
+        </form>
       </div>
     </aside>
 
     <div class="dash-main">
       <header class="dash-topbar">
-        <a class="dash-topbar__brand" href="/kelola/" aria-label="Beranda admin">
+        <a class="dash-topbar__brand" href="{% url 'dashboard:home' %}" aria-label="Beranda admin">
           <img src="{% static 'img/logo-dreamtify-crop.png' %}" alt="{{ brand.name }}" width="338" height="214">
         </a>
-        <h1 class="dash-topbar__title">{% block page_title %}Kelola{% endblock %}</h1>
+        <p class="dash-topbar__title">{% block page_title %}Kelola{% endblock %}</p>
         <div class="dash-user">
-          {% if user.is_authenticated %}
-            <span class="dash-user__name">{{ user.get_username }}</span>
-            <span class="badge badge--{% if user.is_superuser %}navy{% else %}reguler{% endif %}">{% if user.is_superuser %}Owner{% else %}Admin{% endif %}</span>
-          {% else %}
-            <span class="badge badge--neutral">Belum masuk</span>
-          {% endif %}
+          <span class="dash-user__name">{{ user.first_name|default:user.get_username }}</span>
+          {% if role %}<span class="badge badge--{% if role == 'Owner' %}navy{% else %}reguler{% endif %}">{{ role }}</span>{% endif %}
         </div>
       </header>
 
@@ -65,13 +53,14 @@
     </div>
 
     <nav class="dash-bottom-nav" aria-label="Navigasi admin (HP)">
-      {% block bottom_nav %}
-      <a href="/kelola/" aria-current="page">{% icon "home" %}Beranda</a>
-      <a href="/kelola/pesanan/">{% icon "list" %}Pesanan</a>
-      <a href="/kelola/verifikasi/">{% icon "check-circle" %}Verifikasi</a>
-      <a href="/kelola/war/">{% icon "bolt" %}War</a>
-      <a href="/kelola/lainnya/">{% icon "more" %}Lainnya</a>
-      {% endblock %}
+      {% for item in nav.bottom %}
+        {% if item.url %}
+          <a href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{% icon item.icon %}{{ item.short }}</a>
+        {% else %}
+          <span class="is-soon" aria-disabled="true">{% icon item.icon %}{{ item.short }}</span>
+        {% endif %}
+      {% endfor %}
+      <a href="{% url 'dashboard:menu' %}"{% if nav.more_active %} aria-current="page"{% endif %}>{% icon "more" %}Lainnya</a>
     </nav>
   </div>
 

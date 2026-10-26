@@ -7,8 +7,23 @@ from django.utils import timezone
 
 
 def home(request):
-    """Beranda sementara ("Segera hadir"); diganti beranda final di fase 11."""
-    return render(request, "public/coming_soon.html")
+    """Beranda sementara: "Segera hadir" + daftar event yang sedang buka.
+    Beranda final dibangun di fase 11."""
+    from apps.core.enums import EventStatus
+    from apps.events.models import Event
+    from apps.events.services import open_phases, visible_phases
+    from apps.orders.services import quota
+
+    cards = []
+    for event in Event.objects.filter(status=EventStatus.TAMPIL).prefetch_related("phases"):
+        phases = visible_phases(event)
+        if not phases:
+            continue
+        open_ = open_phases(event)
+        phase = (open_ or phases)[0]
+        cards.append({"event": event, "phase": phase, "open": bool(open_),
+                      "remaining": quota.remaining(phase) if open_ else None})
+    return render(request, "public/coming_soon.html", {"cards": cards})
 
 
 def _require_debug():

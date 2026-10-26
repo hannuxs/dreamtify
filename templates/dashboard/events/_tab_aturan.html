@@ -1,0 +1,43 @@
+{% load ui %}
+<form method="post" class="stack" novalidate
+      hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+  {% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <section class="card stack">
+    <h3 class="card__title">Layanan &amp; pembayaran</h3>
+    <div class="form-grid">
+      {% include "components/field.html" with field=form.jaswar_enabled %}
+      {% include "components/field.html" with field=form.jastip_enabled %}
+      {% include "components/field.html" with field=form.payment_methods wide=True %}
+    </div>
+  </section>
+  <section class="card stack">
+    <h3 class="card__title">Batas pesanan</h3>
+    <div class="form-grid">
+      {% include "components/field.html" with field=form.max_lines_per_order %}
+      {% include "components/field.html" with field=form.max_tickets_per_holder %}
+      {% include "components/field.html" with field=form.required_backups %}
+      {% include "components/field.html" with field=form.fallback_any_category %}
+    </div>
+  </section>
+  <section class="card stack">
+    <h3 class="card__title">Uang</h3>
+    <div class="form-grid">
+      {% include "components/field.html" with field=form.fee_basis %}
+      {% include "components/field.html" with field=form.booking_slot_fee %}
+      {% include "components/field.html" with field=form.early_booking_per_ticket %}
+      {% include "components/field.html" with field=form.fee_payment_window_hours %}
+      {% include "components/field.html" with field=form.late_pelunasan_policy %}
+      {% include "components/field.html" with field=form.unique_code_enabled %}
+      {% include "components/field.html" with field=form.customer_va_enabled %}
+    </div>
+  </section>
+  <section class="card stack">
+    <h3 class="card__title">Teks untuk customer</h3>
+    {% include "components/field.html" with field=form.terms %}
+    {% include "components/field.html" with field=form.redemption_info %}
+  </section>
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit"><span>Simpan aturan</span><span class="btn__spinner" aria-hidden="true"></span></button>
+  </div>
+</form>

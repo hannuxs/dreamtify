@@ -1,0 +1,48 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Event{% endblock %}
+{% block page_title %}Event{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <h1 class="page-title">Event</h1>
+    <a class="btn btn--primary" href="{% url 'dashboard:event_create' %}">{% icon "calendar" %}<span>Event baru</span></a>
+  </div>
+
+  <nav class="filter-chips" aria-label="Filter status">
+    <a href="?"{% if not status %} aria-current="true"{% endif %}>Semua</a>
+    {% for value, label in statuses %}
+      <a href="?status={{ value }}"{% if status == value %} aria-current="true"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  {% if events %}
+    <div class="grid grid--cards">
+      {% for event in events %}
+        <article class="card event-row">
+          <div class="cluster cluster-between">
+            <h2 class="event-row__name"><a href="{% url 'dashboard:event_edit' event.pk 'info' %}">{{ event.name }}</a></h2>
+            <span class="badge badge--{% if event.status == 'TAMPIL' %}success{% elif event.status == 'DRAFT' %}neutral{% elif event.status == 'DIBATALKAN' %}danger{% else %}info{% endif %}">{{ event.get_status_display }}</span>
+          </div>
+          <p class="text-small text-muted">{{ event.event_dates|default:"Tanggal belum diisi" }}{% if event.venue %} · {{ event.venue }}{% endif %}</p>
+          <ul class="chips">
+            {% for phase in event.phases.all %}<li><span class="chip">{{ phase.name }} · {{ phase.get_status_display }}</span></li>
+            {% empty %}<li><span class="chip">Belum ada tahap</span></li>{% endfor %}
+            <li><span class="chip">{{ event.n_orders }} pesanan</span></li>
+          </ul>
+          <div class="cluster card__footer">
+            <a class="btn btn--secondary btn--sm" href="{% url 'dashboard:event_edit' event.pk 'info' %}">Kelola</a>
+            <form method="post" action="{% url 'dashboard:event_duplicate' event.pk %}">{% csrf_token %}
+              <button class="btn btn--ghost btn--sm" type="submit">{% icon "copy" %}<span>Duplikat</span></button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% include "components/empty_state.html" with mascot="sleep" title="Belum ada event" text="Buat event baru, atau duplikat event lama agar cepat." action_label="Buat event" action_href="/kelola/event/baru/" %}
+  {% endif %}
+</div>
+{% endblock %}

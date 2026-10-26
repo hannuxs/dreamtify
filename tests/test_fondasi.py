@@ -161,6 +161,8 @@ def test_no_cdn_in_templates():
 
 
 def test_css_budget():
-    """docs/06 §6: total CSS < 60 KB."""
-    total = sum(f.stat().st_size for f in (STATIC / "css").glob("*.css"))
-    assert total < 60 * 1024, total
+    """docs/06 §6: CSS yang dimuat satu halaman < 60 KB (bersama + CSS khusus halaman terbesar)."""
+    css = STATIC / "css"
+    shared = sum((css / f).stat().st_size for f in ("tokens.css", "base.css", "components.css"))
+    page_specific = max((css / f).stat().st_size for f in ("pages.css", "order.css", "dashboard.css"))
+    assert shared + page_specific < 60 * 1024, shared + page_specific

@@ -108,3 +108,94 @@
 .stat:hover { border-color: var(--sky-400); }
 .stat__value { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stat__label { font-size: var(--fs-small); color: var(--ink-600); font-weight: 700; }
+
+/* --- Halaman & form dashboard --- */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--sp-3); }
+.narrow { max-width: 640px; }
+.stat--attention { border-color: var(--sky-400); background: var(--cloud-100); }
+.dash-sidebar__link {
+  display: flex; align-items: center; gap: var(--sp-3); width: 100%; min-height: 40px; padding: 0 var(--sp-3);
+  border: 0; border-radius: 12px; background: none; color: var(--cloud-100); font-weight: 700; font-size: 0.875rem; text-decoration: none;
+}
+.dash-sidebar__link:hover { background: var(--navy-700); color: var(--white); }
+.dash-bottom-nav .is-soon { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: var(--sky-400); opacity: 0.45; font-size: 0.6875rem; font-weight: 800; }
+.dash-bottom-nav .is-soon .icon { width: 24px; height: 24px; }
+.edit-layout { display: grid; gap: var(--sp-5); align-items: start; }
+@media (min-width: 1024px) { .edit-layout { grid-template-columns: minmax(0, 1fr) 280px; } .edit-layout__side { position: sticky; top: 76px; } }
+.checklist { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-small); }
+.checklist li { display: flex; gap: var(--sp-2); align-items: flex-start; color: var(--warning); font-weight: 700; }
+.checklist li.is-ok { color: var(--success); }
+.form-actions {
+  position: sticky; bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom)); z-index: 5;
+  display: flex; justify-content: flex-end; gap: var(--sp-3); padding: var(--sp-3) 0;
+  background: linear-gradient(transparent, var(--cloud-50) 30%);
+}
+@media (min-width: 1024px) { .form-actions { bottom: 0; } }
+.row-card { border: 1px solid var(--line); min-width: 0; }
+.row-card--new { border-style: dashed; background: var(--cloud-50); }
+.row-card__title { font-family: var(--font-display); font-weight: 600; font-size: 1.125rem; padding: 0 var(--sp-1); display: flex; gap: var(--sp-2); align-items: center; }
+.poster-preview { width: 160px; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
+
+/* Tabel kategori: grid di desktop, kartu di HP */
+.cat-table { display: flex; flex-direction: column; gap: var(--sp-3); }
+.cat-table__head { display: none; }
+.cat-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); padding: var(--sp-4); background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
+.cat-row--new { border-style: dashed; background: var(--cloud-50); }
+.cat-row.has-error { border-color: var(--danger); }
+.cat-row__cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cat-row__label { font-size: var(--fs-xs); font-weight: 800; color: var(--ink-600); }
+.cat-row__name, .cat-row__desc, .cat-row__errors { grid-column: 1 / -1; }
+.cat-row__check input { width: 22px; height: 22px; accent-color: var(--navy-900); }
+.cat-row__errors { display: flex; flex-direction: column; }
+@media (min-width: 1024px) {
+  .cat-table__head, .cat-row { grid-template-columns: 1.6fr 1fr 1.2fr 1.6fr 0.6fr 0.5fr 0.5fr; align-items: center; }
+  .cat-table__head { display: grid; gap: var(--sp-3); padding: 0 var(--sp-4); font-size: var(--fs-small); font-weight: 800; color: var(--ink-600); }
+  .cat-row__name, .cat-row__desc { grid-column: auto; }
+  .cat-row__label { display: none; }
+}
+
+/* Matriks fee */
+.fee-table { width: 100%; border-collapse: separate; border-spacing: 0 var(--sp-2); }
+.fee-table th { text-align: left; font-size: var(--fs-small); color: var(--ink-600); padding: 0 var(--sp-2); }
+.fee-table tbody th { color: var(--navy-900); font-size: 1rem; }
+.fee-table td { padding: 0 var(--sp-1); }
+.money-input { position: relative; }
+.money-input > span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-600); font-weight: 700; font-size: var(--fs-small); }
+.money-input .input { padding-left: 38px; }
+input.money { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Beranda tugas */
+.grid--cards { --grid-min: 300px; }
+.phase-card { display: flex; flex-direction: column; gap: var(--sp-3); }
+.phase-card--war { border-color: var(--pink-400); box-shadow: 0 0 0 3px var(--pink-100); }
+.phase-card__title { font-size: 1.25rem; }
+.quota { display: flex; flex-direction: column; gap: 6px; }
+.list-rows { list-style: none; padding: 0; display: flex; flex-direction: column; }
+.list-rows li { display: grid; grid-template-columns: 96px 1fr; gap: var(--sp-3); padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-small); }
+.list-rows li:last-child { border-bottom: 0; }
+.list-rows__when { color: var(--ink-600); font-weight: 700; }
+.event-row__name { font-size: 1.125rem; }
+.event-row__name a { color: var(--navy-900); text-decoration: none; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.filter-chips a { padding: 6px 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--line); font-weight: 700; font-size: var(--fs-small); text-decoration: none; color: var(--navy-900); }
+.filter-chips a[aria-current] { background: var(--navy-900); color: var(--white); border-color: var(--navy-900); }
+.filter-bar { display: grid; gap: var(--sp-3); }
+@media (min-width: 1024px) { .filter-bar { grid-template-columns: 2fr 1.2fr 1fr 1fr auto; align-items: end; } }
+.filter-bar__actions { display: flex; gap: var(--sp-2); }
+.pager { display: flex; justify-content: center; align-items: center; gap: var(--sp-3); }
+
+/* Menu "Lainnya" */
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--sp-3); }
+.menu-tile { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-4);
+  background: var(--white); border: 1px solid var(--line); border-radius: 16px; color: var(--navy-900); font-weight: 800; text-decoration: none; }
+.menu-tile.is-soon { opacity: 0.5; }
+.menu-tile small { font-size: var(--fs-xs); color: var(--ink-600); }
+
+/* Login */
+.login-page { background: linear-gradient(180deg, var(--cloud-100), var(--cloud-50)); }
+.login { position: relative; min-height: 100dvh; display: grid; place-items: center; padding: var(--sp-6) var(--gutter); overflow: hidden; }
+.login__card { position: relative; z-index: 1; width: min(100%, 400px); display: flex; flex-direction: column; gap: var(--sp-3); }
+.login__logo { width: 180px; margin: 0 auto; }
+.login__title { font-size: 1.5rem; text-align: center; }
+.login__card > .text-muted { text-align: center; }

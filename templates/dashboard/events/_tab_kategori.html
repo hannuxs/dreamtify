@@ -1,0 +1,32 @@
+{% load ui %}
+<form method="post" class="stack" novalidate
+      hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+  {% csrf_token %}
+  {{ formset.management_form }}
+  {% for e in formset.non_form_errors %}<div class="alert alert--danger" role="alert">{% icon "alert" %}<span>{{ e }}</span></div>{% endfor %}
+  <p class="text-muted text-small">Tier menentukan besar fee jasa: <strong>VIP</strong> (mis. Duality Package) atau <strong>Reguler</strong>.
+    Kategori yang sudah dipakai pesanan tidak bisa dihapus — nonaktifkan saja.</p>
+  <div class="cat-table" role="table" aria-label="Kategori tiket">
+    <div class="cat-table__head" role="row">
+      <span role="columnheader">Nama</span><span role="columnheader">Tier</span><span role="columnheader">Harga (Rp)</span>
+      <span role="columnheader">Keterangan</span><span role="columnheader">Urutan</span><span role="columnheader">Aktif</span><span role="columnheader">Hapus</span>
+    </div>
+    {% for form in formset %}
+      <div class="cat-row{% if not form.instance.pk %} cat-row--new{% endif %}{% if form.errors %} has-error{% endif %}" role="row">
+        {{ form.id }}
+        <label class="cat-row__cell cat-row__name"><span class="cat-row__label">Nama</span>{{ form.name }}</label>
+        <label class="cat-row__cell"><span class="cat-row__label">Tier</span>{{ form.fee_tier }}</label>
+        <label class="cat-row__cell"><span class="cat-row__label">Harga (Rp)</span>{{ form.price }}</label>
+        <label class="cat-row__cell cat-row__desc"><span class="cat-row__label">Keterangan (opsional)</span>{{ form.description }}</label>
+        <label class="cat-row__cell cat-row__order"><span class="cat-row__label">Urutan</span>{{ form.sort_order }}</label>
+        <label class="cat-row__cell cat-row__check"><span class="cat-row__label">Aktif</span>{{ form.is_active }}</label>
+        <label class="cat-row__cell cat-row__check">{% if form.instance.pk %}<span class="cat-row__label">Hapus</span>{{ form.DELETE }}{% endif %}</label>
+        {% if form.errors %}<div class="cat-row__errors">{% for field in form %}{% for e in field.errors %}<span class="field__error">{{ field.label }}: {{ e }}</span>{% endfor %}{% endfor %}{% for e in form.non_field_errors %}<span class="field__error">{{ e }}</span>{% endfor %}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <p class="text-small text-muted">Baris kosong di bawah untuk menambah kategori. Simpan dulu untuk mendapat baris kosong lagi.</p>
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit"><span>Simpan kategori</span><span class="btn__spinner" aria-hidden="true"></span></button>
+  </div>
+</form>

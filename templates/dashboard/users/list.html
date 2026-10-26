@@ -1,0 +1,36 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Pengguna{% endblock %}
+{% block page_title %}Pengguna{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <h1 class="page-title">Pengguna admin</h1>
+    <a class="btn btn--primary" href="{% url 'dashboard:user_create' %}">{% icon "users" %}<span>Tambah pengguna</span></a>
+  </div>
+  <p class="text-muted text-small"><strong>Owner</strong>: semua akses (pengaturan, pengguna, lihat NIK, ekspor dengan NIK).
+    <strong>Admin</strong>: operasional (event, pesanan, verifikasi, war, penyerahan, kabar).</p>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th scope="col">Username</th><th scope="col">Nama</th><th scope="col">Peran</th><th scope="col">Status</th><th scope="col">Terakhir masuk</th><th scope="col"><span class="visually-hidden">Aksi</span></th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td data-label="Username"><strong>{{ row.user.username }}</strong>{% if row.user.pk == user.pk %} <span class="text-muted text-small">(kamu)</span>{% endif %}</td>
+            <td data-label="Nama">{{ row.user.first_name|default:"-" }}</td>
+            <td data-label="Peran"><span class="badge badge--{% if row.role == 'Owner' %}navy{% else %}reguler{% endif %}">{{ row.role }}</span></td>
+            <td data-label="Status">{% if row.user.is_active %}<span class="badge badge--success">Aktif</span>{% else %}<span class="badge badge--neutral">Nonaktif</span>{% endif %}</td>
+            <td data-label="Terakhir masuk" class="num">{{ row.user.last_login|date:"j M Y H.i"|default:"-" }}</td>
+            <td class="data-table__actions">
+              <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:user_edit' row.user.pk %}">Ubah</a>
+              <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:user_password' row.user.pk %}">Reset sandi</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% load ui %}
+{% if not grid %}
+  {% include "components/empty_state.html" with mascot="sleep" title="Belum ada tahap" text="Buat tahap (Presale/Gensale) dulu di tab Tahap & jadwal." %}
+{% else %}
+<form method="post" class="stack" novalidate
+      hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+  {% csrf_token %}
+  <p class="text-muted text-small">Fee jasa per tiket untuk setiap tahap × layanan × tier. Kosongkan sel bila tidak dipakai
+    (mis. tidak ada kategori VIP).</p>
+  {% for phase, rows in grid %}
+    <section class="card stack" aria-labelledby="fee-{{ phase.pk }}">
+      <h3 id="fee-{{ phase.pk }}" class="card__title">{{ phase.name }}</h3>
+      <table class="fee-table">
+        <thead><tr><th scope="col">Layanan</th><th scope="col">VIP</th><th scope="col">Reguler</th></tr></thead>
+        <tbody>
+          {% for service, cells in rows %}
+            <tr>
+              <th scope="row">{{ service }}</th>
+              {% for cell in cells %}
+                <td><label class="visually-hidden" for="{{ cell.id_for_label }}">{{ cell.label }}</label>
+                  <div class="money-input"><span aria-hidden="true">Rp</span>{{ cell }}</div>
+                  {% for e in cell.errors %}<span class="field__error">{{ e }}</span>{% endfor %}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% endfor %}
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit"><span>Simpan matriks fee</span><span class="btn__spinner" aria-hidden="true"></span></button>
+  </div>
+</form>
+
+{% if show_copy %}
+<form method="post" class="card card--tint stack" novalidate
+      hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="copy">
+  <h3 class="card__title">Salin dari tahap lain</h3>
+  {% include "components/form_errors.html" with form=copy_form %}
+  <div class="form-grid">
+    {% include "components/field.html" with field=copy_form.source %}
+    {% include "components/field.html" with field=copy_form.target %}
+  </div>
+  <div><button class="btn btn--secondary" type="submit">{% icon "copy" %}<span>Salin matriks</span></button></div>
+</form>
+{% endif %}
+{% endif %}

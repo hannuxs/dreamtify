@@ -1,0 +1,26 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Menu{% endblock %}
+{% block page_title %}Semua menu{% endblock %}
+
+{% block content %}
+<div class="stack">
+  {% regroup nav.items by group as groups %}
+  {% for group in groups %}
+    {% if group.grouper %}<h2 class="eyebrow mt-4">{{ group.grouper }}</h2>{% endif %}
+    <div class="menu-grid">
+      {% for item in group.list %}
+        {% if item.url %}
+          <a class="menu-tile" href="{{ item.url }}">{% icon item.icon "icon-lg" %}<span>{{ item.label }}</span></a>
+        {% else %}
+          <span class="menu-tile is-soon">{% icon item.icon "icon-lg" %}<span>{{ item.label }}</span><small>segera</small></span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+  <form method="post" action="{% url 'dashboard:logout' %}" class="mt-6">{% csrf_token %}
+    <button class="btn btn--danger btn--block" type="submit">{% icon "logout" %}<span>Keluar</span></button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}{% if creating %}Event baru{% else %}{{ event.name }}{% endif %}{% endblock %}
+{% block page_title %}{% if creating %}Event baru{% else %}Kelola event{% endif %}{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">{% if creating %}Langkah 1 dari 6{% else %}Event{% endif %}</p>
+      <h1 class="page-title">{% if creating %}Event baru{% else %}{{ event.name }}{% endif %}</h1>
+    </div>
+    {% if not creating %}
+      <div class="cluster">
+        <span class="badge badge--{% if event.status == 'TAMPIL' %}success{% elif event.status == 'DRAFT' %}neutral{% else %}info{% endif %}">{{ event.get_status_display }}</span>
+        <a class="btn btn--ghost btn--sm" href="{{ public_url }}" target="_blank" rel="noopener">{% icon "arrow-right" %}<span>{% if event.status == 'DRAFT' %}Pratinjau{% else %}Lihat halaman{% endif %}</span></a>
+        <div x-data="modal">
+          <button type="button" class="btn btn--secondary btn--sm" @click="show">{% icon "copy" %}<span>Duplikat</span></button>
+          <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="dup-title">
+            <form method="post" action="{% url 'dashboard:event_duplicate' event.pk %}">{% csrf_token %}
+              <div class="modal__head"><h2 id="dup-title">Duplikat event?</h2>
+                <button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+              <div class="modal__body"><p>Semua tahap, kategori, matriks fee, dan aturan disalin (tanpa pesanan).
+                Salinan berstatus Draf, tanggal dikosongkan, dan link promotor baru.</p></div>
+              <div class="modal__foot">
+                <button type="button" class="btn btn--ghost" @click="hide">Batal</button>
+                <button type="submit" class="btn btn--primary">Duplikat</button>
+              </div>
+            </form>
+          </dialog>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <nav class="tabs" aria-label="Bagian event">
+    {% for key, label in tabs %}
+      {% if creating %}
+        <span class="tabs__item{% if key == 'info' %} is-active{% else %} is-disabled{% endif %}"{% if key == 'info' %} aria-current="page"{% endif %}>{{ label }}</span>
+      {% else %}
+        <a class="tabs__item{% if key == tab %} is-active{% endif %}" href="{% url 'dashboard:event_edit' event.pk key %}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endif %}
+    {% endfor %}
+  </nav>
+
+  <div id="tab-panel" class="edit-layout">
+    <div class="edit-layout__main stack">
+      {% if blocked %}
+        <div class="alert alert--danger" role="alert">{% icon "alert" %}
+          <div><strong>Belum tersimpan.</strong> {{ blocked.0 }}
+            {% if blocked|length > 1 %}<ul class="mt-2">{% for m in blocked|slice:"1:" %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+        </div>
+      {% endif %}
+      {% with "dashboard/events/_tab_"|add:tab|add:".html" as tab_template %}{% include tab_template %}{% endwith %}
+    </div>
+    {% if not creating %}
+      <aside class="edit-layout__side card card--tint stack-sm stack" aria-label="Siap publikasi">
+        <h2 class="card__title">Siap publikasi?</h2>
+        <ul class="checklist">
+          {% for label, ok in checklist %}<li class="{% if ok %}is-ok{% endif %}">{% if ok %}{% icon "check-circle" %}{% else %}{% icon "info" %}{% endif %}<span>{{ label }}</span></li>{% endfor %}
+        </ul>
+        <p class="text-small text-muted">Agar terlihat customer: status event <strong>Tampil</strong> (tab Info) dan tahap berstatus <strong>Buka</strong> (tab Tahap).</p>
+      </aside>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

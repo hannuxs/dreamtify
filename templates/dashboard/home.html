@@ -1,0 +1,94 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Beranda tugas{% endblock %}
+{% block page_title %}Beranda tugas{% endblock %}
+
+{% block content %}
+<div class="stack stack-lg">
+  <section class="stack" aria-labelledby="tugas">
+    <h1 id="tugas" class="page-title">Halo, {{ user.first_name|default:user.get_username }} ☁️</h1>
+    <div class="stat-grid">
+      {% for s in stats %}
+        <div class="stat{% if s.value %} stat--attention{% endif %}">
+          <span class="stat__value">{{ s.value }}</span><span class="stat__label">{{ s.label }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="stack" aria-labelledby="event-aktif">
+    <div class="cluster cluster-between">
+      <h2 id="event-aktif">Event aktif</h2>
+      <a class="btn btn--secondary btn--sm" href="{% url 'dashboard:event_create' %}">{% icon "calendar" %}<span>Event baru</span></a>
+    </div>
+    {% if active_phases %}
+      <div class="grid grid--cards">
+        {% for a in active_phases %}
+          <article class="card phase-card{% if a.is_war %} phase-card--war{% endif %}">
+            <div class="cluster cluster-between">
+              <div>
+                <p class="eyebrow">{{ a.event.name }}</p>
+                <h3 class="phase-card__title">{{ a.phase.name }}</h3>
+              </div>
+              {% if a.is_war %}<span class="badge badge--live">War live</span>
+              {% else %}<span class="badge badge--{% if a.phase.status == 'BUKA' %}success{% elif a.phase.status == 'DRAFT' %}neutral{% else %}info{% endif %}">{{ a.phase.get_status_display }}</span>{% endif %}
+            </div>
+            {% if a.event.status == "DRAFT" %}<p class="text-small text-muted">Event masih Draf (belum tampil di web).</p>{% endif %}
+            {% if a.phase.war_at %}
+              <p>{% include "components/countdown.html" with target=a.phase.war_at %}</p>
+            {% else %}
+              <p class="text-small text-muted">Waktu war belum diatur.</p>
+            {% endif %}
+            <div class="quota">
+              <div class="cluster cluster-between text-small"><span>Kuota terpakai</span>
+                <strong class="num">{{ a.used }}{% if a.phase.slot_quota %} / {{ a.phase.slot_quota }}{% else %} tiket (tanpa batas){% endif %}</strong></div>
+              {% if a.percent is not None %}<progress class="progress" value="{{ a.used }}" max="{{ a.phase.slot_quota }}" aria-label="Kuota terpakai {{ a.percent }}%">{{ a.percent }}%</progress>{% endif %}
+            </div>
+            {% if a.counts %}
+              <ul class="chips">{% for label, n in a.counts %}<li><span class="chip">{{ label }} <strong>{{ n }}</strong></span></li>{% endfor %}</ul>
+            {% else %}
+              <p class="text-small text-muted">Belum ada pesanan.</p>
+            {% endif %}
+            <div class="cluster card__footer">
+              <a class="btn btn--secondary btn--sm" href="{% url 'dashboard:event_edit' a.event.pk 'info' %}">Kelola event</a>
+              <a class="btn btn--ghost btn--sm" href="{% url 'public:event_detail' a.event.slug %}" target="_blank" rel="noopener">Lihat halaman</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% if has_events %}
+        {% include "components/empty_state.html" with mascot="sleep" title="Tidak ada tahap aktif" text="Semua tahap sudah selesai. Buat atau duplikat event untuk war berikutnya." action_label="Lihat semua event" action_href="/kelola/event/" %}
+      {% else %}
+        {% include "components/empty_state.html" with mascot="happy" title="Belum ada event" text="Mulai dengan membuat event pertama: info, tahap, kategori, dan matriks fee." action_label="Buat event" action_href="/kelola/event/baru/" %}
+      {% endif %}
+    {% endif %}
+  </section>
+
+  <div class="grid-2">
+    <section class="card stack" aria-labelledby="jadwal">
+      <h2 id="jadwal" class="card__title">Jadwal 7 hari</h2>
+      {% if schedule %}
+        <ul class="list-rows">
+          {% for s in schedule %}
+            <li><span class="list-rows__when num">{{ s.at|date:"D, j M H.i" }}</span>
+              <span><strong>{{ s.label }}</strong> · {{ s.phase.event.name }} – {{ s.phase.name }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="text-muted text-small">Tidak ada war atau batas pelunasan dalam 7 hari ke depan.</p>{% endif %}
+    </section>
+    <section class="card stack" aria-labelledby="aktivitas">
+      <h2 id="aktivitas" class="card__title">Aktivitas terbaru</h2>
+      {% if activity %}
+        <ul class="list-rows">
+          {% for log in activity %}
+            <li><span class="list-rows__when num">{{ log.created_at|date:"j M H.i" }}</span>
+              <span><strong>{{ log.actor_label }}</strong> · {{ log.summary|truncatechars:90 }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="text-muted text-small">Belum ada aktivitas.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

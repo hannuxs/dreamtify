@@ -1,0 +1,18 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}{% if creating %}Tambah pengguna{% else %}Ubah {{ target.username }}{% endif %}{% endblock %}
+{% block page_title %}Pengguna{% endblock %}
+
+{% block content %}
+<div class="stack narrow">
+  <a class="back-link" href="{% url 'dashboard:user_list' %}">← Semua pengguna</a>
+  <h1 class="page-title">{% if creating %}Tambah pengguna{% else %}Ubah {{ target.username }}{% endif %}</h1>
+  <form method="post" class="card stack" novalidate>
+    {% csrf_token %}
+    {% include "components/form_errors.html" %}
+    {% for field in form %}{% include "components/field.html" with field=field %}{% endfor %}
+    {% if target.is_superuser %}<p class="text-small text-muted">Akun ini superuser (selalu Owner &amp; bisa membuka /kelola/sistem/).</p>{% endif %}
+    <div class="form-actions"><button class="btn btn--primary" type="submit">Simpan</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% load static ui %}<!doctype html>
+<html lang="id">
+<head>
+  {% include "components/_head.html" %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Masuk — {{ brand.name }}</title>
+</head>
+<body class="login-page">
+  <main class="login">
+    <img class="cloud-deco cloud-deco--1" src="{% static 'img/cloud-deco.svg' %}" alt="" width="200" height="100">
+    <img class="cloud-deco cloud-deco--2" src="{% static 'img/cloud-deco.svg' %}" alt="" width="200" height="100">
+    <div class="login__card card card--sticker">
+      <img class="login__logo" src="{% static 'img/logo-dreamtify-crop.png' %}" alt="{{ brand.name }}" width="338" height="214">
+      <h1 class="login__title">Masuk dashboard</h1>
+      <p class="text-muted text-small">Khusus tim {{ brand.name }}.</p>
+      <form method="post" class="stack" novalidate>
+        {% csrf_token %}
+        {% if error %}<div class="alert alert--danger" role="alert">{% icon "alert" %}<span>{{ error }}</span></div>{% endif %}
+        {% if not blocked %}{% include "components/form_errors.html" %}{% endif %}
+        {% include "components/field.html" with field=form.username %}
+        {% include "components/field.html" with field=form.password %}
+        <button class="btn btn--primary btn--block" type="submit"{% if blocked %} disabled{% endif %}><span>Masuk</span>{% icon "arrow-right" %}</button>
+      </form>
+    </div>
+  </main>
+  {% include "components/toast_host.html" %}
+</body>
+</html>

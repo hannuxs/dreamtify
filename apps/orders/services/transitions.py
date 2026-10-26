@@ -40,7 +40,7 @@ from apps.notifications.defaults import RESULT_KEYS
 from ..models import Order, OrderLine, OrderTimeline, Payment, TicketSlot
 from . import codes, quota, settlement
 from .pricing import LineInput, PricingContext, quote_order
-from .validation import BuyerData, LineData, validate_order
+from .validation import BuyerData, validate_order
 
 S = OrderStatus
 

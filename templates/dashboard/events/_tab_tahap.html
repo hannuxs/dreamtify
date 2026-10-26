@@ -1,0 +1,32 @@
+{% load ui %}
+<form method="post" class="stack" novalidate
+      hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+  {% csrf_token %}
+  {{ formset.management_form }}
+  {% for e in formset.non_form_errors %}<div class="alert alert--danger" role="alert">{% icon "alert" %}<span>{{ e }}</span></div>{% endfor %}
+  <p class="text-muted text-small">Contoh: Presale &amp; Gensale. Waktu dalam WIB. Pesanan ditutup paling lambat 2 jam sebelum war
+    (agar customer sempat bayar fee). Status <strong>War</strong> &amp; <strong>Selesai</strong> diatur dari Mode War.</p>
+  {% for form in formset %}
+    <fieldset class="card stack row-card{% if not form.instance.pk %} row-card--new{% endif %}">
+      <legend class="row-card__title">{% if form.instance.pk %}{{ form.instance.name }}{% else %}{% icon "calendar" %} Tambah tahap baru <span class="text-muted text-small">(kosongkan bila tidak perlu)</span>{% endif %}</legend>
+      {{ form.id }}
+      {% include "components/form_errors.html" %}
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.name %}
+        {% include "components/field.html" with field=form.status %}
+        {% include "components/field.html" with field=form.order_open_at %}
+        {% include "components/field.html" with field=form.order_close_at %}
+        {% include "components/field.html" with field=form.war_at %}
+        {% include "components/field.html" with field=form.pelunasan_deadline %}
+        {% include "components/field.html" with field=form.slot_quota %}
+        {% include "components/field.html" with field=form.sort_order %}
+        {% include "components/field.html" with field=form.membership_required %}
+        {% include "components/field.html" with field=form.membership_label %}
+      </div>
+      {% if form.instance.pk %}<label class="check check--danger">{{ form.DELETE }}<span>Hapus tahap ini</span></label>{% endif %}
+    </fieldset>
+  {% endfor %}
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit"><span>Simpan tahap &amp; jadwal</span><span class="btn__spinner" aria-hidden="true"></span></button>
+  </div>
+</form>

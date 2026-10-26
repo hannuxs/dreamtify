@@ -9,8 +9,8 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 | 00 | Pemanasan | ✅ selesai | 2026-10-25 | 5 keputusan dicatat di `ASUMSI-DAN-KEPUTUSAN.md` §D; MariaDB 11.4 dipasang |
 | 01 | Fondasi proyek | ✅ selesai | 2026-10-26 | Django 5.2 + MariaDB 3309 + `dev.bat`, komponen dasar, 39 tes lulus |
 | 02 | Model data | ✅ selesai | 2026-10-26 | Semua model + services (harga, status, kuota, penyelesaian), seed, admin; 131 tes lulus |
-| 03 | Pengaturan & event | ⬜ belum | | |
-| 04 | Form pesanan | ⬜ belum | | |
+| 03 | Pengaturan & event | ✅ selesai | 2026-10-26 | Login + peran, beranda tugas, kelola event 6 tab (HTMX), duplikat, pengaturan, pengguna, log |
+| 04 | Form pesanan | ✅ selesai | 2026-10-26 | Detail event, form 4 langkah multi-tiket, ringkasan live, halaman sukses; diuji di browser |
 | 05 | Lacak & pembayaran | ⬜ belum | | |
 | 06 | Verifikasi & waiting list | ⬜ belum | | |
 | 07 | Mode war & hasil | ⬜ belum | | |
@@ -25,6 +25,17 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catatan
 
 ## Hasil tes terakhir
+
+- **2026-10-26, fase 03+04** — pytest di MariaDB: **159 lulus, 0 gagal** (+28 tes baru:
+  login/rate limit/peran/timeout, tab event & validasi publikasi, duplikat, pengaturan,
+  pengguna, log; detail event, form pesanan, kuota → waiting list, rate limit, honeypot,
+  kirim ganda, akses halaman sukses, ringkasan live).
+- **Uji browser sungguhan** (Edge headless, `scripts/tools/browser_flow.py`): alur customer
+  di HP 390px (contoh 4 sampai halaman sukses: Rp 750.000 / Rp 9.500.000 / Rp 10.250.000),
+  draf localStorage tanpa NIK + pemulihan, login & simpan tab via HTMX (toast), dashboard
+  di 390px & 1366px tanpa scroll horizontal. **Tidak ada error JS.** Bug yang ketemu & sudah
+  diperbaiki: tabrakan nama `valueOf` di Alpine (review "[object Object]"), maskot pengganti
+  poster terlalu besar, kolom keterangan kategori terlalu tinggi.
 
 - **2026-10-26, fase 02** — `.venv\Scripts\python -m pytest` di **MariaDB 11.4.13**:
   **131 lulus, 0 gagal** (±15 detik). Termasuk 6 contoh wajib `docs/02` §4.5 (persis),
@@ -56,6 +67,24 @@ Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catata
 ## Pertanyaan terbuka
 
 (hal ambigu yang diputuskan sementara dengan `# ASUMSI:` — pemilik perlu mengonfirmasi)
+
+**Fase 03–04**
+
+14. Status tahap **War/Selesai** hanya diatur dari Mode War; form tahap hanya Draf/Buka/Tutup.
+15. **Validasi publikasi**: event Tampil + tahap Buka wajib punya kategori aktif, waktu war, dan
+    sel fee untuk *tier yang dipakai kategori aktif* (bila tidak ada kategori VIP, fee VIP tidak wajib).
+    Diterapkan seragam: setiap simpan di tab mana pun dibatalkan (rollback) bila hasilnya melanggar.
+16. **Pesanan tutup paling lambat 2 jam sebelum war** divalidasi di form tahap (D3a).
+17. **Event yang tampil ke publik**: status Tampil & Selesai. Draf/Arsip/Dibatalkan → 404, kecuali admin (banner "Pratinjau").
+18. **NIK tidak diisi ulang** setelah form ditolak validasi — customer mengetik ulang (aturan "NIK tidak tampil utuh setelah dikirim").
+    Draf localStorage juga tidak menyimpan NIK, tanggal lahir, dan no. membership.
+19. **JASTIP**: data identitas pemegang (KTP, tgl lahir, email, IG) tidak disimpan walau terisi (C2).
+20. **Username IG pemesan wajib** (data B11). Perekomendasi opsional.
+21. **Rate limit pesanan** dihitung dari kiriman yang lolos validasi (5 / 10 menit / IP), bukan dari salah isi.
+22. Kartu beranda tugas "Refund siap diproses", "Kekurangan bayar", "Tiket menunggu penyerahan"
+    belum tampil (dibangun fase 08). Tab "Template pesan" di Pengaturan = segera (fase 09).
+23. Tombol **"Upload bukti sekarang"** di halaman sukses menuju halaman lacak — halaman itu dibangun di fase 05
+    (sementara 404). Beranda masih "Segera hadir" + daftar event buka (beranda final fase 11).
 
 **Fase 02**
 
@@ -95,6 +124,30 @@ dev: pytest 9.1.1, pytest-django 4.14.0, freezegun 1.5.5.
 Vendor JS: htmx 2.0.11, `@alpinejs/csp` 3.17.4. Font: Fredoka & Nunito (variable, latin + latin-ext, OFL).
 
 ## Catatan untuk fase berikutnya
+
+**Dari fase 03–04:**
+
+- **Dashboard**: view memakai `dash_render(request, template, ctx, active=...)` (menu + peran),
+  `saved(request, msg, url, rerender)` (HTMX → render ulang panel + toast; biasa → PRG redirect),
+  `actor_for(request)`. Izin: `@admin_required` / `@owner_required` (`apps/dashboard/permissions.py`),
+  `is_owner(user)` / `role_of(user)`. Menu di `apps/dashboard/nav.py` — item "segera" otomatis aktif
+  begitu diberi `url_name`.
+- Pola simpan per tab: form `hx-post` ke URL yang sama dengan `hx-target/hx-select="#tab-panel"`.
+- Form: `StyledFormMixin`, `RupiahField` (terima "3.500.000"), `DateTimeLocalInput`, partial
+  `components/field.html` & `components/form_errors.html`.
+- Validasi publikasi event: `apps/events/services.py` (`publication_problems`, `checklist`,
+  `phase_accepts_orders`, `duplicate_event`, `copy_fee_matrix`).
+- Rate limit: `apps/core/ratelimit.py` (`hit`, `is_blocked`, `reset`, `client_ip`). Gambar publik:
+  `apps/core/images.process_public_image` (validasi isi, buang EXIF, lebar ≤1600, JPEG) disajikan
+  lewat `/media/public/...` (view berizin, hanya jpg/png/webp, cache 1 hari).
+- Form pesanan: kartu tiket dirender server sebanyak `max_lines_per_order`; yang tidak aktif
+  disembunyikan **dan** di-`disabled` sehingga tidak terkirim. Server membaca baris aktif dari
+  keberadaan `lines-N-service_type`. Alpine: `orderForm` + `lineCard` (`static/js/app.js`).
+  ⚠️ Jangan memberi nama metode Alpine yang sama dengan properti bawaan objek (`valueOf`, `toString`, …).
+- Halaman sukses bisa dibuka oleh sesi pemesan (`session["my_orders"]`) atau token lacak (`?t=`).
+- Event contoh **"Contoh Fanmeet"** (`/event/contoh-fanmeet/`) ada di DB dev: Presale (Buka, kuota 40,
+  war ±5 hari dari 26 Okt) & Gensale (Draf), 7 kategori, matriks fee sesuai form lama.
+- **Uji browser**: `scripts/tools/browser_flow.py skenario.json` (lihat docstring) — dipakai lagi di fase 14.
 
 **Dari fase 02 (penting untuk fase 03+):**
 

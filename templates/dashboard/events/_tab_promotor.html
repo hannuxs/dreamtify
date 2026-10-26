@@ -1,0 +1,37 @@
+{% load ui %}
+<section class="card stack">
+  <h3 class="card__title">Link rahasia promotor</h3>
+  <p class="text-muted text-small">Promotor bisa mengunduh rekap data pembeli sendiri lewat link ini
+    (halamannya dibangun di fase rekap &amp; ekspor). Link hanya berfungsi bila diaktifkan.</p>
+  <div class="copy-row">
+    <code class="copy-row__link">{{ promotor_url }}</code>
+    {% include "components/copy_button.html" with value=promotor_url label="Salin link" toast="Link promotor tersalin ✓" %}
+  </div>
+  <div x-data="modal">
+    <button type="button" class="btn btn--danger btn--sm" @click="show">Ganti link</button>
+    <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="regen-title">
+      <form method="post" hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">{% csrf_token %}
+        <input type="hidden" name="action" value="regenerate">
+        <div class="modal__head"><h2 id="regen-title">Ganti link promotor?</h2>
+          <button type="button" class="btn btn--ghost btn--icon" @click="hide" aria-label="Tutup">{% icon "x" %}</button></div>
+        <div class="modal__body"><p>Link lama langsung tidak berlaku. Kirim link baru ke promotor setelah ini.</p></div>
+        <div class="modal__foot">
+          <button type="button" class="btn btn--ghost" @click="hide">Batal</button>
+          <button type="submit" class="btn btn--danger-solid">Ganti link</button>
+        </div>
+      </form>
+    </dialog>
+  </div>
+</section>
+
+<form method="post" class="card stack" novalidate
+      hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML">
+  {% csrf_token %}
+  {% include "components/form_errors.html" %}
+  {% include "components/field.html" with field=form.promotor_name %}
+  {% include "components/field.html" with field=form.promotor_link_enabled %}
+  {% include "components/field.html" with field=form.promotor_include_nik %}
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit"><span>Simpan</span><span class="btn__spinner" aria-hidden="true"></span></button>
+  </div>
+</form>

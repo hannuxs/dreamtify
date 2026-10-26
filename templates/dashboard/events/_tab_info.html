@@ -1,0 +1,28 @@
+{% load ui %}
+<form method="post" enctype="multipart/form-data" class="card stack" novalidate
+      {% if not creating %}hx-post="{{ request.path }}" hx-target="#tab-panel" hx-select="#tab-panel" hx-swap="outerHTML" hx-encoding="multipart/form-data"{% endif %}>
+  {% csrf_token %}
+  {% include "components/form_errors.html" %}
+  <div class="form-grid">
+    {% include "components/field.html" with field=form.name wide=True %}
+    {% include "components/field.html" with field=form.artist %}
+    {% include "components/field.html" with field=form.slug %}
+    {% include "components/field.html" with field=form.event_dates %}
+    {% include "components/field.html" with field=form.first_show_date %}
+    {% include "components/field.html" with field=form.venue %}
+    {% include "components/field.html" with field=form.city %}
+    {% include "components/field.html" with field=form.ticketing_platform %}
+    {% if form.status %}{% include "components/field.html" with field=form.status %}{% endif %}
+    {% include "components/field.html" with field=form.description wide=True %}
+    <div class="field field--wide">
+      <span class="field__label">Poster</span>
+      {% if event.poster %}<img class="poster-preview" src="{{ event.poster.url }}" alt="Poster {{ event.name }}" loading="lazy">{% endif %}
+      {{ form.poster }}
+      <span class="field__hint">JPG/PNG/WEBP, maks 10 MB. Otomatis dikecilkan (lebar 1600px) &amp; data lokasi dibuang. Rasio ideal 4:5.</span>
+      {% for e in form.poster.errors %}<span class="field__error">{{ e }}</span>{% endfor %}
+    </div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit"><span>{% if creating %}Buat event{% else %}Simpan info{% endif %}</span><span class="btn__spinner" aria-hidden="true"></span></button>
+  </div>
+</form>
