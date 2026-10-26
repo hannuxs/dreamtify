@@ -10,6 +10,9 @@ from apps.core.log_filters import MaskingFormatter, MaskSensitiveFilter, mask_se
 
 STATIC = Path(settings.BASE_DIR) / "static"
 
+# Context processor membaca SiteSetting dari DB
+pytestmark = pytest.mark.django_db
+
 
 # --- /sehat/ ---------------------------------------------------------------
 

@@ -8,7 +8,7 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 |---|---|---|---|---|
 | 00 | Pemanasan | ✅ selesai | 2026-10-25 | 5 keputusan dicatat di `ASUMSI-DAN-KEPUTUSAN.md` §D; MariaDB 11.4 dipasang |
 | 01 | Fondasi proyek | ✅ selesai | 2026-10-26 | Django 5.2 + MariaDB 3309 + `dev.bat`, komponen dasar, 39 tes lulus |
-| 02 | Model data | ⬜ belum | | |
+| 02 | Model data | ✅ selesai | 2026-10-26 | Semua model + services (harga, status, kuota, penyelesaian), seed, admin; 131 tes lulus |
 | 03 | Pengaturan & event | ⬜ belum | | |
 | 04 | Form pesanan | ⬜ belum | | |
 | 05 | Lacak & pembayaran | ⬜ belum | | |
@@ -25,6 +25,13 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catatan
 
 ## Hasil tes terakhir
+
+- **2026-10-26, fase 02** — `.venv\Scripts\python -m pytest` di **MariaDB 11.4.13**:
+  **131 lulus, 0 gagal** (±15 detik). Termasuk 6 contoh wajib `docs/02` §4.5 (persis),
+  setiap baris tabel pembatalan §4.4, verifikasi kurang/pas/lebih/sekaligus, undo Mode War,
+  enkripsi + rotasi kunci, dan tes kuota bersamaan (2 thread, sisa kuota 1).
+  Tes kuota dibuktikan bermakna: tanpa `select_for_update` tes itu **gagal** (keduanya dapat slot).
+- `makemigrations --check`: bersih. `seed_initial` dua kali: tanpa duplikat.
 
 - **2026-10-26, fase 01** — `.venv\Scripts\python -m pytest` di **MariaDB 11.4.13**
   (DB tes `test_dreamtify_dev`): **39 lulus, 0 gagal**.
@@ -50,6 +57,24 @@ Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catata
 
 (hal ambigu yang diputuskan sementara dengan `# ASUMSI:` — pemilik perlu mengonfirmasi)
 
+**Fase 02**
+
+6. **Snapshot harga per pesanan** (`Order.pricing_snapshot`): seluruh matriks fee, harga &
+   tier semua kategori, booking slot, dan early booking disimpan saat pesanan dibuat. Hasil war
+   (termasuk kategori "Lainnya" di luar pilihan) dihitung dari snapshot ini — perubahan harga
+   event tidak mengubah pesanan lama (`docs/02` §4.1). "Hitung ulang" (fase 06) memperbaruinya.
+7. **Pembatalan tidak pernah membuat customer berutang**: semua rumus §4.4 dibatasi
+   `min(dibayar, …)`. Contoh: fee baru dibayar sebagian lalu batal → yang hangus = yang sudah dibayar.
+8. **Batal oleh customer saat bukti masih dicek** → `HANGUS` (bukan `DIBATALKAN`). Bila bukti itu
+   kemudian ditolak, yang hangus tetap `min(dibayar=0, …) = 0`; bila diterima, fee hangus sesuai aturan.
+9. **Kuota semua-atau-tidak**: pesanan 3 tiket saat sisa 2 masuk waiting list utuh (tidak dipecah).
+10. **Saldo saat war berlangsung**: tiket yang belum ada hasilnya dihitung seperti sebelum war
+    (fee awal + harga dasar), jadi saldo baru "final" setelah semua tiket terisi.
+11. **Admin boleh mencatat pembayaran tanpa bukti** (mis. customer kirim lewat WA); customer wajib upload bukti.
+12. **Penyerahan hanya maju** (Menunggu → Ditukar → Siap → Diserahkan); status yang sama boleh
+    diulang untuk memperbarui detail (mis. no. resi). Dari "Menunggu" boleh langsung lompat ke "Siap diserahkan".
+13. **Batas fee setelah bukti ditolak** diperpanjang ke `sekarang + 6 jam` (maks. `war − 2 jam`) — D3(b).
+
 1. Keputusan D1–D5 di `ASUMSI-DAN-KEPUTUSAN.md` §D sudah disetujui secara umum
    ("pakai usulan yang masuk akal"); D2 (early booking hangus) paling layak dicek ulang.
 2. Penyamar log (`apps/core/log_filters.py`) menyamarkan **NIK 16 digit** (boleh
@@ -70,6 +95,37 @@ dev: pytest 9.1.1, pytest-django 4.14.0, freezegun 1.5.5.
 Vendor JS: htmx 2.0.11, `@alpinejs/csp` 3.17.4. Font: Fredoka & Nunito (variable, latin + latin-ext, OFL).
 
 ## Catatan untuk fase berikutnya
+
+**Dari fase 02 (penting untuk fase 03+):**
+
+- **API services** (`apps/orders/services/transitions.py`) — semua menerima `actor=Actor`
+  (`apps.core.actors`: `Actor.staff(user, ip)`, `Actor.customer(code, ip)`, `Actor.system()`):
+  `create_order(phase, buyer=BuyerData, lines=[LineData], payment_method)`, `submit_payment`,
+  `verify_payment`, `reject_payment(reason)`, `promote_from_waitlist`, `release_slot`,
+  `cancel_by_customer`, `cancel_by_admin(reason)`, `cancel_expired_fee` (untuk `run_periodic`),
+  `start_war`, `set_slot_result(result, category, expected_version)` (result=`MENUNGGU` = undo),
+  `finish_war(mark_rest_failed)`, `set_fulfillment`, `record_refund`, `refresh_completion`.
+  Error: `InvalidTransition` (+ `QuotaFull`), `SlotConflict`, `django ValidationError` dengan kunci
+  field seperti `lines.0.holder_nik` (cocok untuk dipetakan ke form fase 04).
+- **Angka** untuk tampilan: `settlement.summarize(order)` → `initial_due`, `pelunasan_due`,
+  `paid_in`, `refunded`, `pending_in`, `final_due`, `balance`, `refund_due`, `shortfall`,
+  `remaining_before_war`. Dialog batal: `settlement.cancellation_preview(order)`.
+  Pratinjau form: `pricing.quote_order(PricingContext.for_phase(phase), [LineInput…], method)`.
+- **Query**: `apps/orders/selectors.py` (`get_order(code)`, `orders_for_phase`, `pending_payments`) — pakai ini di view (prefetch).
+- **Template**: `{% load ui %}` → `|rupiah`, `|status_tone`, `|result_tone`. Brand dari `SiteSetting.load()`.
+- **Link lacak**: `links.tracking_url(order)` / `check_tracking_token(code, token)` (30 hari) — dipakai fase 05.
+- **Notifikasi**: `notifications.services.enqueue(order, KEY, extra=…, dedupe=…)`; template default
+  di `apps/notifications/defaults.py` (20 key, semua sudah berisi `{kode}` & `{link_lacak}`).
+  Email baru dibuat barisnya (status PERLU_DIKIRIM) bila diaktifkan — pengiriman di fase 09.
+- **Zona waktu MariaDB**: Django butuh tabel zona waktu MariaDB untuk filter tanggal (mis.
+  `date_hierarchy`, `__date`). Di Windows diisi dari paket `tzdata` lewat
+  `Install-TimeZoneTables` (`scripts/common.ps1`); `dev.bat` menawarkannya otomatis bila
+  `manage.py cek_db` menjawab `OK:TZ`. **Fase 13: `install.ps1` wajib memanggilnya juga.**
+- `dev.bat` kini juga menjalankan `seed_initial` (idempoten) setelah migrasi.
+- Izin: grup **Owner** (semua + `orders.view_full_nik`) dan **Admin** (operasional, tanpa NIK
+  penuh & tanpa ubah pengaturan). Cek "Lihat NIK" pakai `user.has_perm("orders.view_full_nik")`.
+
+**Dari fase 01:**
 
 - **Settings**: `config/settings/{base,dev,prod,test}.py`. `test.py` (tambahan) dipakai
   pytest: hasher MD5, email `locmem`, log ke NullHandler; `DJANGO_TEST_SQLITE=1` → SQLite.

@@ -237,9 +237,3 @@ LOGGING = {
         "django.db.backends": {"level": "WARNING"},
     },
 }
-
-# ---------------------------------------------------------------------------
-# Brand (sementara; fase 02 memindahkan ke SiteSetting)
-# ---------------------------------------------------------------------------
-BRAND_NAME = "Dreamtify"
-BRAND_TAGLINE = "Your Dream is Our Priority"

@@ -241,6 +241,41 @@ function Initialize-AppDatabase {
     return Invoke-MariaDbSql -Bin $Bin -HostName $HostName -Port $Port -RootPassword $RootPassword -Sql $sql.ToString()
 }
 
+function Install-TimeZoneTables {
+    <#
+      Isi tabel zona waktu MariaDB (dibutuhkan Django untuk lookup tanggal dengan
+      USE_TZ, mis. CONVERT_TZ). Di Windows tidak ada /usr/share/zoneinfo, jadi
+      sumbernya paket Python `tzdata`. Hanya zona yang dipakai; idempoten.
+    #>
+    param([string]$Bin, [string]$HostName, [int]$Port, [string]$RootPassword,
+          [string[]]$Zones = @('UTC', 'Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'))
+    $venvPy = Get-VenvPython
+    $zoneDir = (& $venvPy -c "import tzdata, os; print(os.path.join(os.path.dirname(tzdata.__file__), 'zoneinfo'))").Trim()
+    $tool = Join-Path $Bin 'mariadb-tzinfo-to-sql.exe'
+    if (-not (Test-Path $tool)) { $tool = Join-Path $Bin 'mysql_tzinfo_to_sql.exe' }
+    $sql = New-Object Text.StringBuilder
+    [void]$sql.AppendLine('USE mysql;')
+    foreach ($zone in ($Zones | Select-Object -Unique)) {
+        $file = Join-Path $zoneDir ($zone -replace '/', '\')
+        if (-not (Test-Path $file)) { continue }
+        [void]$sql.AppendLine("SET @old_tz = (SELECT Time_zone_id FROM time_zone_name WHERE Name = '$zone');")
+        [void]$sql.AppendLine('DELETE FROM time_zone_transition WHERE Time_zone_id = @old_tz;')
+        [void]$sql.AppendLine('DELETE FROM time_zone_transition_type WHERE Time_zone_id = @old_tz;')
+        [void]$sql.AppendLine('DELETE FROM time_zone WHERE Time_zone_id = @old_tz;')
+        [void]$sql.AppendLine("DELETE FROM time_zone_name WHERE Name = '$zone';")
+        $out = [IO.Path]::GetTempFileName()
+        try {
+            $p = Start-Process -FilePath $tool -ArgumentList "`"$file`"", $zone -RedirectStandardOutput $out `
+                -NoNewWindow -Wait -PassThru
+            if ($p.ExitCode -ne 0) { return @{ Ok = $false; Output = "tzinfo gagal untuk $zone" } }
+            [void]$sql.AppendLine([IO.File]::ReadAllText($out))
+        } finally {
+            Remove-Item $out -Force -ErrorAction SilentlyContinue
+        }
+    }
+    return Invoke-MariaDbSql -Bin $Bin -HostName $HostName -Port $Port -RootPassword $RootPassword -Sql $sql.ToString()
+}
+
 function ConvertFrom-SecureToPlain([Security.SecureString]$Secure) {
     $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
     try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }

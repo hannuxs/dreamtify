@@ -40,23 +40,32 @@ if (-not (Test-TcpPort $dbHost $dbPort)) {
 }
 Write-Ok "MariaDB terhubung di ${dbHost}:${dbPort}"
 
+$script:RootPw = $env:MARIADB_ROOT_PASSWORD
+function Get-RootPassword([string]$Purpose) {
+    if (-not $script:RootPw) {
+        $answer = Read-Host "$Purpose Butuh password root MariaDB (tidak disimpan). Lanjut? [Y/n]"
+        if ($answer -and $answer -notmatch '^[Yy]') { return $null }
+        $script:RootPw = ConvertFrom-SecureToPlain (Read-Host 'Password root MariaDB' -AsSecureString)
+    }
+    return $script:RootPw
+}
+function Get-MariaDbBinOrExit {
+    $bin = Find-MariaDbBin $cfg.MARIADB_BIN
+    if (-not $bin) {
+        Write-Fail 'Folder bin MariaDB tidak ditemukan.' 'Isi MARIADB_BIN di .env, mis. C:\Program Files\MariaDB 11.4\bin'
+        exit 1
+    }
+    return $bin
+}
+
 $check = (& $venvPy manage.py cek_db | Select-Object -Last 1)
-if ($check -ne 'OK') {
+if ($check -like 'GAGAL:*') {
     $code = ($check -split ':')[1]
     if ($code -in '1045', '1049', '1044') {
         Write-Warn "Database '$dbName' atau user '$($cfg.DB_USER)' belum siap ($check)."
-        $rootPw = $env:MARIADB_ROOT_PASSWORD
-        if (-not $rootPw) {
-            $answer = Read-Host 'Buat database & user sekarang? Butuh password root MariaDB (tidak disimpan). [Y/n]'
-            if ($answer -and $answer -notmatch '^[Yy]') { Write-Fail 'Dibatalkan.'; exit 1 }
-            $rootPw = ConvertFrom-SecureToPlain (Read-Host 'Password root MariaDB' -AsSecureString)
-        }
-        $bin = Find-MariaDbBin $cfg.MARIADB_BIN
-        if (-not $bin) {
-            Write-Fail 'Folder bin MariaDB tidak ditemukan.' 'Isi MARIADB_BIN di .env, mis. C:\Program Files\MariaDB 11.4\bin'
-            exit 1
-        }
-        $res = Initialize-AppDatabase -Bin $bin -HostName $dbHost -Port $dbPort -RootPassword $rootPw `
+        $rootPw = Get-RootPassword 'Buat database & user sekarang?'
+        if (-not $rootPw) { Write-Fail 'Dibatalkan.'; exit 1 }
+        $res = Initialize-AppDatabase -Bin (Get-MariaDbBinOrExit) -HostName $dbHost -Port $dbPort -RootPassword $rootPw `
             -Databases @($dbName) -User $cfg.DB_USER -Password $cfg.DB_PASSWORD
         if (-not $res.Ok) {
             Write-Fail "Gagal membuat database: $($res.Output)" 'Cek password root MariaDB lalu jalankan dev.bat lagi.'
@@ -65,12 +74,26 @@ if ($check -ne 'OK') {
         Write-Ok "Database '$dbName' dan user '$($cfg.DB_USER)' siap"
         $check = (& $venvPy manage.py cek_db | Select-Object -Last 1)
     }
-    if ($check -ne 'OK') {
+    if ($check -like 'GAGAL:*') {
         Write-Fail "Tidak bisa masuk ke database: $check" 'Cek DB_USER / DB_PASSWORD / DB_NAME_DEV di .env.'
         exit 1
     }
 }
 Write-Ok "Login database '$dbName' berhasil"
+
+# Tabel zona waktu MariaDB (dibutuhkan Django untuk filter tanggal WIB)
+if ($check -eq 'OK:TZ') {
+    $rootPw = Get-RootPassword 'Tabel zona waktu MariaDB belum diisi. Isi sekarang?'
+    if ($rootPw) {
+        $res = Install-TimeZoneTables -Bin (Get-MariaDbBinOrExit) -HostName $dbHost -Port $dbPort -RootPassword $rootPw
+        if ($res.Ok) { Write-Ok 'Tabel zona waktu MariaDB terisi' }
+        else { Write-Warn "Gagal mengisi zona waktu: $($res.Output)" }
+    } else {
+        Write-Warn 'Zona waktu MariaDB belum diisi; filter tanggal di admin bisa error.'
+    }
+} else {
+    Write-Skip 'Tabel zona waktu MariaDB sudah ada'
+}
 
 # 4. Migrasi ------------------------------------------------------------
 Invoke-Manage migrate --noinput
@@ -78,6 +101,8 @@ if ($LASTEXITCODE -ne 0) { Write-Fail 'migrate gagal (lihat pesan di atas).'; ex
 Invoke-Manage createcachetable
 if ($LASTEXITCODE -ne 0) { Write-Fail 'createcachetable gagal.'; exit 1 }
 Write-Ok 'Database ter-migrasi'
+Invoke-Manage seed_initial
+if ($LASTEXITCODE -ne 0) { Write-Fail 'seed_initial gagal (lihat pesan di atas).'; exit 1 }
 
 # 5. Opsi seed ----------------------------------------------------------
 if ($Rest -contains 'seed') {

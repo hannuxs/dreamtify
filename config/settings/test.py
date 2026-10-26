@@ -7,6 +7,11 @@ DJANGO_TEST_SQLITE=1 → SQLite in-memory, hanya untuk tes logika murni
 import os
 
 from .dev import *  # noqa: F401,F403
+from .dev import FIELD_ENCRYPTION_KEYS, NIK_HASH_PEPPER
+
+# Kunci khusus tes bila .env belum ada (mis. CI). Bukan untuk data nyata.
+FIELD_ENCRYPTION_KEYS = FIELD_ENCRYPTION_KEYS or ["dGVzdC1rZXktdGVzdC1rZXktdGVzdC1rZXktdGVzdC0="]
+NIK_HASH_PEPPER = NIK_HASH_PEPPER or "pepper-khusus-tes"
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
