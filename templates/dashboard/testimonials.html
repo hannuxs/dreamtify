@@ -1,0 +1,62 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Testimoni{% endblock %}
+{% block page_title %}Testimoni{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <h1 class="page-title">Testimoni</h1>
+  <nav class="tabs" aria-label="Status testimoni">
+    {% for key, label, count in tabs %}<a class="tabs__item{% if tab == key %} is-active{% endif %}" href="?tab={{ key }}">{{ label }} ({{ count }})</a>{% endfor %}
+  </nav>
+
+  {% for t, form in rows %}
+    <article class="card stack stack-sm">
+      <div class="cluster cluster-between">
+        <div><strong>{{ t.display_name }}</strong> {% stars t.rating %}
+          <span class="text-small text-muted">· {{ t.created_at|date:"j M Y" }}{% if t.event %} · {{ t.event.name }}{% endif %}</span></div>
+        <div class="cluster">
+          {% if t.order %}<a class="code" href="{% url 'dashboard:order_detail' t.order.code %}">{{ t.order.code }}</a>{% else %}<span class="badge badge--neutral">{{ t.get_source_display }}</span>{% endif %}
+          {% if t.is_featured %}<span class="badge badge--pink">Unggulan</span>{% endif %}
+        </div>
+      </div>
+      {% if t.text %}<p>{{ t.text|linebreaksbr }}</p>{% endif %}
+      {% if t.image %}<a href="{% url 'dashboard:testimonial_image' t.pk %}" target="_blank" rel="noopener"><img class="testi-thumb" src="{% url 'dashboard:testimonial_image' t.pk %}" alt="Gambar testimoni {{ t.display_name }}" loading="lazy"></a>{% endif %}
+      <div class="cluster">
+        {% if t.status != "TAMPIL" %}<form method="post" action="{% url 'dashboard:testimonial_action' t.pk 'setujui' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ next }}"><button class="btn btn--primary btn--sm" type="submit">Setujui</button></form>{% endif %}
+        {% if t.status == "TAMPIL" %}<form method="post" action="{% url 'dashboard:testimonial_action' t.pk 'unggulan' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ next }}"><button class="btn btn--secondary btn--sm" type="submit">{% if t.is_featured %}Lepas unggulan{% else %}Jadikan unggulan{% endif %}</button></form>{% endif %}
+        {% if t.status != "DISEMBUNYIKAN" %}<form method="post" action="{% url 'dashboard:testimonial_action' t.pk 'sembunyikan' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ next }}"><button class="btn btn--ghost btn--sm" type="submit">Sembunyikan</button></form>{% endif %}
+      </div>
+      <details>
+        <summary class="fw-bold text-small">Edit teks</summary>
+        <form method="post" action="{% url 'dashboard:testimonial_edit' t.pk %}" class="stack stack-sm mt-2">{% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          {% include "components/field.html" with field=form.display_name %}
+          {% include "components/field.html" with field=form.text %}
+          <div><button class="btn btn--secondary btn--sm" type="submit">Simpan</button></div>
+        </form>
+      </details>
+      <details>
+        <summary class="fw-bold text-small">Hapus</summary>
+        <form method="post" action="{% url 'dashboard:testimonial_delete' t.pk %}" class="stack stack-sm mt-2">{% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          <p class="text-small text-muted">Testimoni dan gambarnya dihapus permanen.</p>
+          <div><button class="btn btn--danger btn--sm" type="submit">Ya, hapus</button></div>
+        </form>
+      </details>
+    </article>
+  {% empty %}
+    {% include "components/empty_state.html" with mascot="happy" title="Tidak ada testimoni" text="Belum ada testimoni di tab ini." %}
+  {% endfor %}
+
+  <details class="card stack"{% if manual_form.is_bound %} open{% endif %}>
+    <summary class="fw-bold">Tambah testimoni (screenshot chat)</summary>
+    <form method="post" action="{% url 'dashboard:testimonial_add' %}" enctype="multipart/form-data" class="stack mt-2" novalidate>{% csrf_token %}
+      {% include "components/form_errors.html" with form=manual_form %}
+      <div class="form-grid">{% for field in manual_form %}{% include "components/field.html" with field=field %}{% endfor %}</div>
+      <div><button class="btn btn--primary" type="submit">Tambah &amp; tampilkan</button></div>
+    </form>
+  </details>
+</div>
+{% endblock %}

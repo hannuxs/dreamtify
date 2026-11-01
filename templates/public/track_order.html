@@ -207,6 +207,20 @@
     </ol>
   </section>
 
+  {% if testimonial_form %}
+    <section class="card stack" aria-labelledby="testimoni">
+      <h2 id="testimoni" class="card__title">Bagikan pengalamanmu ⭐</h2>
+      <p class="text-small text-muted">Testimoni tampil di web setelah dicek admin. Satu pesanan satu testimoni.</p>
+      <form method="post" action="{% url 'public:track_testimonial' order.code %}" enctype="multipart/form-data" class="stack" novalidate>{% csrf_token %}
+        {% include "components/form_errors.html" with form=testimonial_form %}
+        {% for field in testimonial_form %}{% include "components/field.html" with field=field %}{% endfor %}
+        <div><button class="btn btn--primary" type="submit">Kirim testimoni</button></div>
+      </form>
+    </section>
+  {% elif testimonial_sent %}
+    <p class="alert alert--success">{% icon "check-circle" %}<span>Terima kasih, testimonimu sudah kami terima.</span></p>
+  {% endif %}
+
   {# Bantuan & batal #}
   <section class="cluster track__help">
     {% if brand.admin_whatsapp %}<a class="btn btn--secondary" href="{% wa_link brand.admin_whatsapp wa_admin_text %}" target="_blank" rel="noopener">{% icon "chat" %}<span>Tanya admin</span></a>{% endif %}

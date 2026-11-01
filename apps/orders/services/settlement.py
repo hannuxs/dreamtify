@@ -280,16 +280,12 @@ def finance_recap(orders) -> tuple[FinanceRecap, list]:
     for order in orders:
         row = order_finance(order)
         rows.append(row)
-        for payment in order.payments.all():
-            if payment.status != PaymentStatus.DITERIMA:
-                continue
-            amount = payment.amount_received or 0
-            if payment.kind == PaymentKind.FEE:
-                recap.fee_received += amount
-            elif payment.kind == PaymentKind.REFUND:
-                recap.refund_out += amount
-            else:
-                recap.pelunasan_received += amount
+        # ASUMSI: customer boleh bayar sekaligus (satu Payment jenis FEE), jadi porsi fee dihitung dari
+        # tagihan awal, bukan dari jenis pembayaran; sisanya pelunasan/kekurangan.
+        fee_part = min(row.summary.paid_in, row.summary.initial_due)
+        recap.fee_received += fee_part
+        recap.pelunasan_received += row.summary.paid_in - fee_part
+        recap.refund_out += row.summary.refunded
         recap.held += row.held
         recap.fee_income += row.fee_income
         recap.ticket_price += row.ticket_price

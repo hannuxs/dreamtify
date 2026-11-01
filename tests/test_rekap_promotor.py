@@ -362,3 +362,11 @@ def test_excel_keuangan_hanya_owner(owner, staff, admin):
 
 def test_rekap_tanpa_login_dialihkan():
     assert Client().get("/kelola/rekap/").status_code == 302
+
+
+def test_bayar_sekaligus_dipisah_fee_dan_pelunasan(admin):
+    fx = make_fanmeet()
+    order = make_order(fx, [line(fx, JASWAR, 2, ("Duality Package", "CAT 1", "CAT 2"))])
+    pay(order, 7_500_000, admin)  # satu Payment jenis FEE
+    data, _ = settlement.finance_recap(orders_with_money(fx.event))
+    assert (data.fee_received, data.pelunasan_received) == (500_000, 7_000_000)

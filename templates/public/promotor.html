@@ -5,7 +5,7 @@
 {% block extra_head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {% block content %}
-<div class="container container--narrow stack section">
+<div class="container container-narrow stack section">
   <header class="stack stack-sm">
     <p class="eyebrow">Rekap untuk promotor{% if event.promotor_name %} · {{ event.promotor_name }}{% endif %}</p>
     <h1>{{ event.name }}</h1>
@@ -38,7 +38,7 @@
     <h2 id="ringkas" class="card__title">Ringkasan</h2>
     <p class="text-small">{{ recap.orders }} pesanan · {{ recap.tickets }} tiket · {{ recap.secured }} secured</p>
     {% if recap.categories %}
-      <div class="table-wrap"><table class="data-table">
+      <div class="table-wrap"><table class="mini-table">
         <thead><tr><th>Kategori</th><th>Pesanan</th><th>Tiket</th><th>Secured</th></tr></thead>
         <tbody>
           {% for row in recap.categories %}

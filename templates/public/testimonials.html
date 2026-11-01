@@ -1,0 +1,43 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block title %}Testimoni — {{ brand.name }}{% endblock %}
+{% block meta_description %}Cerita customer {{ brand.name }} yang sudah memakai jasa war & jastip tiket konser.{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/pages.css' %}">{% endblock %}
+
+{% block content %}
+<div class="container section stack">
+  <header class="stack stack-sm">
+    <h1>Testimoni</h1>
+    {% if summary.total %}<p class="cluster">{% stars summary.rounded %}<span><strong>{{ summary.average|floatformat:1 }}</strong> dari {{ summary.total }} testimoni</span></p>{% endif %}
+  </header>
+
+  {% if events %}
+    <form method="get" class="cluster">
+      <select class="select select--auto" name="event" aria-label="Filter event">
+        <option value="">Semua event</option>
+        {% for e in events %}<option value="{{ e.slug }}"{% if event and event.pk == e.pk %} selected{% endif %}>{{ e.name }}</option>{% endfor %}
+      </select>
+      <button class="btn btn--secondary btn--sm" type="submit">Tampilkan</button>
+    </form>
+  {% endif %}
+
+  {% if page.object_list %}
+    <div class="testi-grid testi-grid--page" x-data="lightbox">
+      {% for t in page.object_list %}{% include "public/_testimonial_card.html" %}{% endfor %}
+      {% include "public/_lightbox.html" %}
+    </div>
+    {% if page.has_other_pages %}
+      <nav class="cluster pager" aria-label="Halaman">
+        {% if page.has_previous %}<a class="btn btn--secondary btn--sm" href="?{% if event %}event={{ event.slug }}&amp;{% endif %}halaman={{ page.previous_page_number }}">Sebelumnya</a>{% endif %}
+        <span class="text-small text-muted">Halaman {{ page.number }} dari {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a class="btn btn--secondary btn--sm" href="?{% if event %}event={{ event.slug }}&amp;{% endif %}halaman={{ page.next_page_number }}">Berikutnya</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    {% include "components/empty_state.html" with mascot="sleep" title="Belum ada testimoni" text="Testimoni pertama bisa jadi milikmu." %}
+  {% endif %}
+
+  <p class="alert alert--info">{% icon "info" %}<span>Sudah pakai {{ brand.name }}? Tulis testimoni dari <a href="{% url 'public:track_login' %}">halaman lacak pesananmu</a>.</span></p>
+</div>
+{% endblock %}

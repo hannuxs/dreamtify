@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group, Permission
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from apps.core.default_content import GENERAL_TERMS, PRIVACY_POLICY
 from apps.core.models import BankAccount, FaqItem, SiteSetting
 from apps.notifications.defaults import DEFAULT_TEMPLATES
 from apps.notifications.models import MessageTemplate
@@ -73,9 +74,11 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **options):
         setting = SiteSetting.load()
-        if not setting.refund_policy_summary:
-            setting.refund_policy_summary = REFUND_SUMMARY
-            setting.save(update_fields=["refund_policy_summary", "updated_at"])
+        for field, default in (("refund_policy_summary", REFUND_SUMMARY), ("general_terms", GENERAL_TERMS),
+                               ("privacy_policy", PRIVACY_POLICY)):
+            if not getattr(setting, field):
+                setattr(setting, field, default)
+        setting.save()
         self.stdout.write("[OK] Pengaturan situs")
 
         for i, (bank, number, holder) in enumerate(BANK_ACCOUNTS):

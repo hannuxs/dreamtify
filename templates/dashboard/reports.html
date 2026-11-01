@@ -2,7 +2,7 @@
 {% load ui %}
 
 {% block title %}Rekap & Ekspor{% endblock %}
-{% block page_title %}Rekap & Ekspor{% endblock %}
+{% block page_title %}Rekap{% endblock %}
 
 {% block content %}
 <div class="stack">
@@ -45,15 +45,15 @@
     <h2 id="ringkas" class="card__title">Rekap ringkas</h2>
     <p class="text-small">{{ recap.orders }} pesanan · {{ recap.tickets }} tiket · {{ recap.secured }} secured</p>
     {% if recap.categories %}
-      <div class="table-wrap"><table class="data-table">
+      <div class="table-wrap"><table class="mini-table">
         <thead><tr><th>Kategori</th><th>Diminta sebagai utama</th><th>Secured</th></tr></thead>
         <tbody>{% for r in recap.categories %}<tr><td data-label="Kategori"><strong>{{ r.name }}</strong></td><td data-label="Diminta sebagai utama">{{ r.requested }}</td><td data-label="Secured">{{ r.secured }}</td></tr>{% endfor %}</tbody>
       </table></div>
-      <div class="table-wrap"><table class="data-table">
+      <div class="table-wrap"><table class="mini-table">
         <thead><tr><th>Layanan</th><th>Pesanan</th><th>Tiket</th><th>Secured</th></tr></thead>
         <tbody>{% for r in recap.services %}<tr><td data-label="Layanan"><strong>{{ r.name }}</strong></td><td data-label="Pesanan">{{ r.orders }}</td><td data-label="Tiket">{{ r.tickets }}</td><td data-label="Secured">{{ r.secured }}</td></tr>{% endfor %}</tbody>
       </table></div>
-      <div class="table-wrap"><table class="data-table">
+      <div class="table-wrap"><table class="mini-table">
         <thead><tr><th>Metode bayar</th><th>Pesanan</th><th>Tiket</th></tr></thead>
         <tbody>{% for r in recap.methods %}<tr><td data-label="Metode bayar"><strong>{{ r.name }}</strong></td><td data-label="Pesanan">{{ r.orders }}</td><td data-label="Tiket">{{ r.tickets }}</td></tr>{% endfor %}</tbody>
       </table></div>

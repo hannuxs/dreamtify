@@ -143,7 +143,8 @@ def home(request):
         {"label": "Kabar belum dikirim", "value": Notification.objects.filter(
             status=NotificationStatus.PERLU_DIKIRIM, channel=NotificationChannel.WA).count(),
          "url": reverse("dashboard:inbox")},
-        {"label": "Testimoni menunggu", "value": Testimonial.objects.filter(status=TestimonialStatus.MENUNGGU).count()},
+        {"label": "Testimoni menunggu", "value": Testimonial.objects.filter(status=TestimonialStatus.MENUNGGU).count(),
+         "url": reverse("dashboard:testimonials")},
     ]
 
     phases = (SalePhase.objects.select_related("event")

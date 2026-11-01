@@ -1,0 +1,14 @@
+{% load ui %}<article class="card testi">
+  <div class="cluster cluster-between">
+    <strong>{{ t.display_name }}</strong>
+    {% stars t.rating %}
+  </div>
+  {% if t.event %}<p class="text-small text-muted">{{ t.event.name }}</p>{% endif %}
+  {% if t.text %}<p>{{ t.text|linebreaksbr }}</p>{% endif %}
+  {% if t.public_image %}
+    <button class="testi__photo" type="button" @click="show" data-src="{{ t.public_image.url }}" data-alt="Foto testimoni {{ t.display_name }}" aria-label="Perbesar foto testimoni {{ t.display_name }}">
+      <img src="{{ t.public_image.url }}" alt="" loading="lazy">
+    </button>
+  {% endif %}
+  {% if t.order_id %}<span class="badge badge--success">{% icon "check-circle" %}Pembeli terverifikasi</span>{% endif %}
+</article>

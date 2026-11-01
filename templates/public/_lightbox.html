@@ -1,0 +1,4 @@
+{% load ui %}<dialog class="lightbox" x-ref="dialog" @click="backdrop" aria-label="Foto testimoni">
+  <button class="btn btn--secondary btn--icon lightbox__close" type="button" @click="hide" aria-label="Tutup">{% icon "x" %}</button>
+  <img :src="src" :alt="alt">
+</dialog>

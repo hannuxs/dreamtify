@@ -28,7 +28,7 @@ ITEMS = (
     NavItem("handover", "Penyerahan", "gift", "dashboard:handover", group="Operasional"),
     NavItem("inbox", "Kotak Kabar", "megaphone", "dashboard:inbox", group="Operasional"),
     NavItem("reports", "Rekap & Ekspor", "download", "dashboard:reports", group="Operasional"),
-    NavItem("testimonials", "Testimoni", "star", group="Operasional"),
+    NavItem("testimonials", "Testimoni", "star", "dashboard:testimonials", group="Operasional"),
     NavItem("settings", "Pengaturan", "settings", "dashboard:settings", group="Owner", owner_only=True),
     NavItem("users", "Pengguna", "users", "dashboard:user_list", group="Owner", owner_only=True),
     NavItem("log", "Log aktivitas", "list", "dashboard:audit_log", group="Owner", owner_only=True),

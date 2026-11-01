@@ -4,6 +4,13 @@
   {% include "components/_head.html" %}
   <title>{% block title %}{{ brand.name }} — {{ brand.tagline }}{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}Jasa war &amp; jastip tiket konser. Kamu tinggal duduk manis, kami yang berjuang.{% endblock %}">
+  <link rel="canonical" href="{{ SITE_URL }}{{ request.path }}">
+  <meta property="og:site_name" content="{{ brand.name }}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}{{ brand.name }} — {{ brand.tagline }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Jasa war &amp; jastip tiket konser. Kamu tinggal duduk manis, kami yang berjuang.{% endblock %}">
+  <meta property="og:url" content="{{ SITE_URL }}{{ request.path }}">
+  <meta property="og:image" content="{% block og_image %}{{ SITE_URL }}{% static 'img/logo-dreamtify-crop.png' %}{% endblock %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>

@@ -122,6 +122,24 @@
       };
     });
 
+    /* --- Foto testimoni: tombol dengan data-src membuka <dialog> --- */
+    Alpine.data("lightbox", function () {
+      return {
+        src: "",
+        alt: "",
+        show: function (event) {
+          var data = event.currentTarget.dataset;
+          this.src = data.src;
+          this.alt = data.alt || "";
+          this.$refs.dialog.showModal();
+        },
+        hide: function () { this.$refs.dialog.close(); },
+        backdrop: function (event) {
+          if (event.target === this.$refs.dialog) this.hide();
+        },
+      };
+    });
+
     /* --- Tombol salin: <button x-data="copyButton" data-copy="..."> --- */
     Alpine.data("copyButton", function () {
       return {

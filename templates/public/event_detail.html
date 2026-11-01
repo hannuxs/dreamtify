@@ -3,6 +3,9 @@
 
 {% block title %}{{ event.name }} — {{ brand.name }}{% endblock %}
 {% block meta_description %}Jasa war &amp; jastip tiket {{ event.name }}{% if event.event_dates %}, {{ event.event_dates }}{% endif %}. Lihat pricelist, jadwal war, dan pesan di {{ brand.name }}.{% endblock %}
+{% block og_title %}{{ event.name }} — {{ brand.name }}{% endblock %}
+{% block og_description %}Jasa war &amp; jastip tiket {{ event.name }}{% if event.event_dates %}, {{ event.event_dates }}{% endif %}.{% endblock %}
+{% block og_image %}{% if event.poster %}{{ SITE_URL }}{{ event.poster.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{% static 'css/pages.css' %}">{% if preview %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
 
 {% block content %}

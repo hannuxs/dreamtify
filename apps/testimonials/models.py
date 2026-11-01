@@ -4,7 +4,7 @@ from django.db import models
 
 from apps.core.enums import TestimonialSource, TestimonialStatus
 from apps.core.models import TimeStampedModel
-from apps.core.uploads import private_upload_to
+from apps.core.uploads import private_upload_to, public_upload_to
 
 
 class Testimonial(TimeStampedModel):
@@ -15,9 +15,10 @@ class Testimonial(TimeStampedModel):
                               related_name="testimonials",
                               help_text="Terisi → badge 'Pembeli terverifikasi'")
     rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
-    text = models.TextField("isi")
-    # Disimpan privat dulu; disalin ke media/public/ saat disetujui (fase 11)
+    text = models.TextField("isi", blank=True)
+    # Disimpan privat dulu; disalin ke media/public/ saat disetujui, dihapus lagi bila disembunyikan
     image = models.ImageField("gambar", upload_to=private_upload_to, blank=True)
+    public_image = models.ImageField("gambar publik", upload_to=public_upload_to, blank=True, editable=False)
     source = models.CharField(max_length=10, choices=TestimonialSource.choices,
                               default=TestimonialSource.CUSTOMER)
     status = models.CharField(max_length=14, choices=TestimonialStatus.choices,
@@ -32,6 +33,7 @@ class Testimonial(TimeStampedModel):
         ordering = ["-created_at", "-id"]
         verbose_name = "testimoni"
         verbose_name_plural = "testimoni"
+        constraints = [models.UniqueConstraint(fields=["order"], name="uniq_testimonial_order")]
 
     def __str__(self):
         return f"{self.display_name} ({self.rating}★)"

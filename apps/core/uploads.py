@@ -19,6 +19,7 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 PRIVATE_MAX_WIDTH = 2000
 PUBLIC_MAX_WIDTH = 1600
 ACCEPT_ATTR = "image/jpeg,image/png,image/webp,application/pdf"
+IMAGE_ACCEPT_ATTR = "image/jpeg,image/png,image/webp"
 
 
 def _path(prefix: str, filename: str) -> str:

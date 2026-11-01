@@ -447,3 +447,14 @@ fieldset.form-grid { border: 0; padding: 0; margin: 0; min-width: 0; }
 .summary__totals dt small { display: block; font-weight: 600; color: var(--ink-600); }
 .summary__totals dd { margin: 0; font-weight: 800; white-space: nowrap; }
 .summary__now dd { font-size: 1.25rem; }
+
+/* --- Rating --- */
+.stars { color: var(--sun-400); letter-spacing: 1px; white-space: nowrap; }
+.stars__off { color: var(--line); }
+
+/* --- Tabel angka ringkas: tetap tabel di HP --- */
+.mini-table { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+.mini-table th, .mini-table td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.mini-table th:first-child, .mini-table td:first-child { text-align: left; white-space: normal; }
+.mini-table th { color: var(--ink-600); }
+.mini-table tr:last-child td { border-bottom: 0; }

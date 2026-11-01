@@ -1,0 +1,93 @@
+{% extends "base_public.html" %}
+{% load static ui %}
+
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/pages.css' %}">{% endblock %}
+
+{% block content %}
+<section class="hero home-hero">
+  <img class="cloud-deco cloud-deco--1" src="{% static 'img/cloud-deco.svg' %}" alt="" width="200" height="100">
+  <img class="cloud-deco cloud-deco--2" src="{% static 'img/cloud-deco.svg' %}" alt="" width="200" height="100">
+  <img class="cloud-deco cloud-deco--3" src="{% static 'img/cloud-deco.svg' %}" alt="" width="200" height="100">
+  <div class="container container-narrow hero__inner home-hero__inner">
+    <img class="home-hero__logo" src="{% static 'img/logo-dreamtify-crop.png' %}" alt="{{ brand.name }} — {{ brand.tagline }}" width="338" height="214">
+    <h1 class="title-logo">{{ brand.tagline }}</h1>
+    <p class="home-hero__lead">Jasa war &amp; jastip tiket konser. Kamu tinggal duduk manis, kami yang berjuang.</p>
+    <div class="cluster home-hero__cta">
+      <a class="btn btn--primary btn--lg" href="#event">{% icon "ticket" %}<span>Lihat event</span></a>
+      <a class="btn btn--secondary btn--lg" href="{% url 'public:track_login' %}">{% icon "search" %}<span>Lacak pesanan</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="event" aria-labelledby="event-title">
+  <div class="container stack">
+    <h2 id="event-title">Event yang sedang buka</h2>
+    {% if cards %}
+      <div class="grid grid--events">
+        {% for card in cards %}{% include "components/event_card.html" with event=card.event phase=card.phase open=card.open remaining=card.remaining %}{% endfor %}
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with mascot="sleep" title="Belum ada event" text="Belum ada event, pantau IG kami ya." %}
+    {% endif %}
+  </div>
+</section>
+
+<section class="section section-tint" aria-labelledby="cara-title">
+  <div class="container stack">
+    <h2 id="cara-title">Cara kerja</h2>
+    <ol class="how">
+      <li class="card card--sticker"><span class="how__num">1</span><strong>Pilih event</strong><span>Lihat harga, jadwal war, dan sisa slot.</span></li>
+      <li class="card card--sticker"><span class="how__num">2</span><strong>Isi pesanan &amp; bayar fee</strong><span>Bisa beberapa kategori dan belikan teman dalam satu pesanan.</span></li>
+      <li class="card card--sticker"><span class="how__num">3</span><strong>Pantau di halaman lacak</strong><span>Hasil war, refund, sampai penyerahan gelang ada di satu tempat.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="layanan-title">
+  <div class="container stack">
+    <h2 id="layanan-title">JASWAR atau JASTIP?</h2>
+    <div class="grid-2">
+      <article class="card stack stack-sm">
+        <span class="badge badge--sky">JASWAR</span>
+        <h3>Jasa war saja</h3>
+        <p>Pakai data kamu. Gelang kamu tukar sendiri.</p>
+      </article>
+      <article class="card card--tint stack stack-sm">
+        <span class="badge badge--navy">JASTIP</span>
+        <h3>Terima beres</h3>
+        <p>Pakai data tim. Gelang kami tukarkan &amp; serahkan.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+{% if testimonials %}
+<section class="section section-tint" aria-labelledby="testi-title">
+  <div class="container stack">
+    <div class="cluster cluster-between">
+      <h2 id="testi-title">Kata mereka</h2>
+      <a class="btn btn--secondary btn--sm" href="{% url 'public:testimonials' %}"><span>Lihat semua</span>{% icon "arrow-right" %}</a>
+    </div>
+    <div class="testi-grid" x-data="lightbox">
+      {% for t in testimonials %}{% include "public/_testimonial_card.html" %}{% endfor %}
+      {% include "public/_lightbox.html" %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if faqs %}
+<section class="section" aria-labelledby="faq-title">
+  <div class="container container-narrow stack">
+    <h2 id="faq-title">Pertanyaan umum</h2>
+    <div class="accordion">
+      {% for item in faqs %}{% include "components/accordion_item.html" with title=item.question body=item.answer %}{% endfor %}
+    </div>
+    <div class="cluster">
+      <a class="btn btn--ghost" href="{% url 'public:faq' %}">Semua pertanyaan</a>
+      {% if brand.admin_whatsapp %}<a class="btn btn--secondary" href="https://wa.me/{{ brand.admin_whatsapp }}" target="_blank" rel="noopener">{% icon "chat" %}<span>Tanya admin via WA</span></a>{% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

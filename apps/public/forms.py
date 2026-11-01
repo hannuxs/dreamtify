@@ -10,7 +10,7 @@ from apps.core.enums import Gender, ServiceType, TicketPaymentMethod
 from apps.core.forms import DATETIME_INPUT_FORMATS, DateInput, DateTimeLocalInput, RupiahField, StyledFormMixin
 from apps.core.models import BankAccount
 from apps.core.phone import normalize_wa
-from apps.core.uploads import ACCEPT_ATTR, process_private_upload
+from apps.core.uploads import ACCEPT_ATTR, IMAGE_ACCEPT_ATTR, process_private_upload
 from apps.core.money import format_rupiah
 
 WA_ATTRS = {"inputmode": "tel", "autocomplete": "tel", "placeholder": "0812 3456 7890",
@@ -205,6 +205,17 @@ class HolderEditForm(StyledFormMixin, forms.Form):
             self.fields["nik"].help_text = f"Saat ini •••• {line.holder_nik_last4}. Kosongkan bila tidak berubah."
         if not after_war:
             del self.fields["reason"]
+
+
+class TestimonialForm(StyledFormMixin, forms.Form):
+    display_name = forms.CharField(label="Nama tampilan", max_length=80, help_text="Boleh nama panggilan.")
+    rating = forms.TypedChoiceField(label="Rating", coerce=int, initial=5,
+                                    choices=[(n, f"{n} bintang") for n in range(5, 0, -1)])
+    text = forms.CharField(label="Ceritakan pengalamanmu", max_length=1000, widget=forms.Textarea(attrs={"rows": 4}))
+    image = forms.ImageField(label="Foto (opsional)", required=False,
+                             widget=forms.ClearableFileInput(attrs={"accept": IMAGE_ACCEPT_ATTR}))
+    consent = forms.BooleanField(label="Saya setuju testimoni ini ditampilkan di web Dreamtify",
+                                 error_messages={"required": "Centang persetujuan dulu ya."})
 
 
 class CustomerVaForm(StyledFormMixin, forms.Form):

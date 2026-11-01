@@ -8,6 +8,7 @@ from . import (
     views_owner,
     views_reports,
     views_settlement,
+    views_testimonials,
     views_verify,
     views_war,
 )
@@ -62,6 +63,13 @@ urlpatterns = [
     path("rekap/", views_reports.reports, name="reports"),
     path("rekap/promotor.<slug:fmt>", views_reports.promotor_export, name="promotor_export"),
     path("rekap/keuangan.xlsx", views_reports.finance_export, name="finance_export"),
+    # Testimoni
+    path("testimoni/", views_testimonials.testimonial_list, name="testimonials"),
+    path("testimoni/tambah/", views_testimonials.testimonial_add, name="testimonial_add"),
+    path("testimoni/<int:pk>/gambar/", views_testimonials.testimonial_image, name="testimonial_image"),
+    path("testimoni/<int:pk>/ubah/", views_testimonials.testimonial_edit, name="testimonial_edit"),
+    path("testimoni/<int:pk>/hapus/", views_testimonials.testimonial_delete, name="testimonial_delete"),
+    path("testimoni/<int:pk>/<slug:action>/", views_testimonials.testimonial_action, name="testimonial_action"),
     # Owner
     path("pengaturan/", views_owner.redirect_settings, name="settings"),
     path("pengaturan/template/<slug:key>/", views_inbox.template_edit, name="template_edit"),

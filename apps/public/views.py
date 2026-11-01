@@ -1,29 +1,77 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.http import Http404
+from django.core.paginator import Paginator
+from django.http import Http404, HttpResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
+
+from apps.core.enums import EventStatus, PhaseStatus
+from apps.core.models import FaqItem, SiteSetting
+from apps.events.models import Event
+from apps.events.services import open_phases, visible_phases
+from apps.orders.services import quota
+from apps.testimonials import services as testimonial_services
+
+TESTIMONIALS_PER_PAGE = 12
 
 
 def home(request):
-    """Beranda sementara: "Segera hadir" + daftar event yang sedang buka.
-    Beranda final dibangun di fase 11."""
-    from apps.core.enums import EventStatus
-    from apps.events.models import Event
-    from apps.events.services import open_phases, visible_phases
-    from apps.orders.services import quota
-
     cards = []
     for event in Event.objects.filter(status=EventStatus.TAMPIL).prefetch_related("phases"):
-        phases = visible_phases(event)
+        phases = [p for p in visible_phases(event) if p.status != PhaseStatus.SELESAI]
         if not phases:
             continue
         open_ = open_phases(event)
-        phase = (open_ or phases)[0]
+        phase = (open_ or [p for p in phases if p.status == PhaseStatus.WAR] or phases)[0]
         cards.append({"event": event, "phase": phase, "open": bool(open_),
                       "remaining": quota.remaining(phase) if open_ else None})
-    return render(request, "public/coming_soon.html", {"cards": cards})
+    cards.sort(key=lambda c: not c["open"])  # yang sedang buka tampil lebih dulu
+    return render(request, "public/home.html", {
+        "cards": cards, "testimonials": testimonial_services.featured(),
+        "faqs": FaqItem.objects.filter(is_active=True)[:5],
+    })
+
+
+def testimonials(request):
+    event = Event.objects.filter(slug=request.GET.get("event", "")).first()
+    qs = testimonial_services.published(event)
+    summary = testimonial_services.rating_summary(qs)
+    summary["rounded"] = round(summary["average"] or 0)
+    events = Event.objects.filter(pk__in=testimonial_services.published().values("event")).order_by("name")
+    return render(request, "public/testimonials.html", {
+        "page": Paginator(qs, TESTIMONIALS_PER_PAGE).get_page(request.GET.get("halaman")),
+        "event": event, "events": events, "summary": summary,
+    })
+
+
+def faq(request):
+    return render(request, "public/faq.html", {"faqs": FaqItem.objects.filter(is_active=True)})
+
+
+def terms(request):
+    body = SiteSetting.load().general_terms
+    return render(request, "public/legal.html", {"heading": "Syarat & ketentuan", "body": body})
+
+
+def privacy(request):
+    body = SiteSetting.load().privacy_policy
+    return render(request, "public/legal.html", {"heading": "Kebijakan privasi", "body": body})
+
+
+def robots(request):
+    lines = ["User-agent: *", "Disallow: /kelola/", "Disallow: /lacak/", "Disallow: /p/", "Disallow: /berkas/",
+             "Disallow: /pesanan/", f"Sitemap: {settings.SITE_URL}/sitemap.xml", ""]
+    return HttpResponse("\n".join(lines), content_type="text/plain; charset=utf-8")
+
+
+def sitemap(request):
+    paths = ["/", "/testimoni/", "/faq/", "/syarat/", "/privasi/"]
+    for slug in Event.objects.filter(status__in=(EventStatus.TAMPIL, EventStatus.SELESAI)).values_list("slug", flat=True):
+        paths.append(reverse("public:event_detail", args=[slug]))
+    return render(request, "public/sitemap.xml", {"urls": [settings.SITE_URL + p for p in paths]},
+                  content_type="application/xml; charset=utf-8")
 
 
 def _require_debug():

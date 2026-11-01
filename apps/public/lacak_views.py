@@ -34,9 +34,10 @@ from apps.orders.services import codes, guidance, settlement, transitions, updat
 from apps.orders.services.links import tracking_url
 from apps.orders.services.transitions import InvalidTransition
 from apps.orders.services.validation import HolderData
+from apps.testimonials import services as testimonial_services
 
 from . import access
-from .forms import CustomerVaForm, HolderEditForm, PaymentUploadForm, RefundAccountForm, TrackLoginForm
+from .forms import CustomerVaForm, HolderEditForm, PaymentUploadForm, RefundAccountForm, TestimonialForm, TrackLoginForm
 
 LOGIN_LIMIT = 10
 LOGIN_WINDOW = 15 * 60
@@ -92,7 +93,7 @@ def track_login(request):
 # Halaman lacak
 # ---------------------------------------------------------------------------
 
-def _lacak_context(request, order, *, pay_form=None, refund_form=None, va_form=None):
+def _lacak_context(request, order, *, pay_form=None, refund_form=None, va_form=None, testimonial_form=None):
     summary = settlement.summarize(order)
     due = guidance.payment_due(order, summary)
     accounts = list(BankAccount.objects.filter(is_active=True))
@@ -122,6 +123,9 @@ def _lacak_context(request, order, *, pay_form=None, refund_form=None, va_form=N
         "can_edit_holders": order.status in PRE_WAR_STATUSES,
         "can_cancel": can_cancel,
         "cancel_preview": settlement.cancellation_preview(order, CancelReason.BATAL_CUSTOMER) if can_cancel else None,
+        "testimonial_form": testimonial_form or (TestimonialForm(initial={"display_name": order.buyer_name.split()[0]})
+                                                 if testimonial_services.can_submit(order) else None),
+        "testimonial_sent": order.status == OrderStatus.SELESAI and order.testimonials.exists(),
         "tracking_url": tracking_url(order),
         "wa_admin_text": f"Halo kak, saya mau tanya pesanan {order.code}",
     }
@@ -265,6 +269,26 @@ def serve_private(stored, name: str):
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "private, no-store"
     return response
+
+
+@require_POST
+def track_testimonial(request, code):
+    order = _order_or_404(request, code)
+    form = TestimonialForm(request.POST, request.FILES)
+    if form.is_valid():
+        d = form.cleaned_data
+        try:
+            testimonial_services.submit_from_customer(order, display_name=d["display_name"], rating=d["rating"], text=d["text"],
+                                                      image=d["image"], actor=_customer(request, order))
+        except InvalidTransition as exc:
+            messages.error(request, str(exc))
+        except ValidationError as exc:
+            form.add_error("image", exc.messages[0])
+            return render(request, "public/track_order.html", _lacak_context(request, order, testimonial_form=form))
+        else:
+            messages.success(request, "Terima kasih! Testimonimu tampil setelah dicek admin.")
+        return redirect("public:track_order", code=order.code)
+    return render(request, "public/track_order.html", _lacak_context(request, order, testimonial_form=form))
 
 
 @require_POST

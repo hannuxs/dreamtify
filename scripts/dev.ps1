@@ -1,6 +1,6 @@
 # =====================================================================
 # dev.ps1 - menjalankan Dreamtify mode pengembangan di port 8383.
-# Dipanggil oleh dev.bat. Argumen opsional: seed (tersedia di fase 11).
+# Dipanggil oleh dev.bat. Argumen opsional: seed (isi data demo).
 # Otomatis (non-interaktif): set $env:MARIADB_ROOT_PASSWORD agar
 # pembuatan database tidak menanyakan password root.
 # =====================================================================
@@ -106,7 +106,8 @@ if ($LASTEXITCODE -ne 0) { Write-Fail 'seed_initial gagal (lihat pesan di atas).
 
 # 5. Opsi seed ----------------------------------------------------------
 if ($Rest -contains 'seed') {
-    Write-Info 'Data demo (dev.bat seed) tersedia di fase 11. Dilewati.'
+    Invoke-Manage seed_demo
+    if ($LASTEXITCODE -ne 0) { Write-Fail 'seed_demo gagal (lihat pesan di atas).'; exit 1 }
 }
 
 # 6. Server ---------------------------------------------------------------

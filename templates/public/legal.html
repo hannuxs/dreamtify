@@ -1,0 +1,12 @@
+{% extends "base_public.html" %}
+
+{% block title %}{{ heading }} — {{ brand.name }}{% endblock %}
+{% block meta_description %}{{ heading }} layanan {{ brand.name }}.{% endblock %}
+
+{% block content %}
+<div class="container container-narrow section stack">
+  <h1>{{ heading }}</h1>
+  {% if body %}<div class="prose">{{ body|linebreaks }}</div>
+  {% else %}{% include "components/empty_state.html" with mascot="sleep" title="Belum tersedia" text="Halaman ini sedang disiapkan." %}{% endif %}
+</div>
+{% endblock %}

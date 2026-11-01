@@ -101,3 +101,11 @@ def icon(name, cls="", label=""):
     return format_html(
         '<svg class="{}" aria-hidden="true" focusable="false"><use href="{}"></use></svg>', css, href
     )
+
+
+@register.simple_tag
+def stars(rating):
+    """Bintang rating 1–5 (dekoratif untuk pembaca layar lewat aria-label)."""
+    filled = max(0, min(5, int(rating or 0)))
+    return format_html('<span class="stars" role="img" aria-label="Rating {} dari 5">{}<span class="stars__off">{}</span></span>',
+                       filled, "★" * filled, "★" * (5 - filled))

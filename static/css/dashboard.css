@@ -318,3 +318,6 @@ kbd { font-family: var(--font-body); font-size: 0.75em; font-weight: 800; paddin
 .finance-list > div { display: flex; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px dashed var(--line); }
 .finance-list > div:last-child { border-bottom: 0; font-weight: 800; }
 .finance-list dd { margin: 0; white-space: nowrap; }
+
+/* --- Testimoni --- */
+.testi-thumb { max-width: 180px; max-height: 180px; border-radius: 12px; border: 1px solid var(--line); }
