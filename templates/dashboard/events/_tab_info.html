@@ -15,7 +15,7 @@
     {% if form.status %}{% include "components/field.html" with field=form.status %}{% endif %}
     {% include "components/field.html" with field=form.description wide=True %}
     <div class="field field--wide">
-      <span class="field__label">Poster</span>
+      <label class="field__label" for="{{ form.poster.id_for_label }}">Poster</label>
       {% if event.poster %}<img class="poster-preview" src="{{ event.poster.url }}" alt="Poster {{ event.name }}" loading="lazy">{% endif %}
       {{ form.poster }}
       <span class="field__hint">JPG/PNG/WEBP, maks 10 MB. Otomatis dikecilkan (lebar 1600px) &amp; data lokasi dibuang. Rasio ideal 4:5.</span>

@@ -19,12 +19,28 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 | 10 | Rekap & ekspor promotor | ✅ selesai | 2026-11-01 | Excel 3 sheet + CSV, rekap ringkas & keuangan, link promotor |
 | 11 | Testimoni, beranda, FAQ | ✅ selesai | 2026-11-01 | Beranda final, testimoni + moderasi, FAQ/syarat/privasi, SEO, `seed_demo` |
 | 12 | Keamanan & tugas harian | ✅ selesai | 2026-11-01 | Audit docs/09, CSP, retensi, backup + restore, `run_daily`, uji beban |
-| 13 | Installer Windows | ⬜ belum | | |
-| 14 | Uji akhir & serah terima | ⬜ belum | | |
+| 13 | Installer Windows | ⚠️ selesai dengan catatan | 2026-11-01 | `install.bat`, `prod.bat`, `layanan.ps1`, `siapkan_db` otomatis, MariaDB di server lain. Scheduled Task & firewall belum diuji (butuh Administrator) |
+| 14 | Uji akhir & serah terima | ⚠️ selesai dengan catatan | 2026-11-01 | Skenario 1–11 otomatis lulus, audit 360px & kontras, panduan admin. Skenario 12 perlu VM; Lighthouse diganti audit manual |
 
 Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catatan
 
 ## Hasil tes terakhir
+
+- **2026-11-01, fase 13+14** — pytest di MariaDB: **277 lulus, 0 gagal** (+18 tes: `siapkan_db`, pesan error koneksi,
+  `buat_owner`, skrip ASCII, tugas memakai mode produksi, skenario docs/11 §2 nomor 1–11 lewat halaman sungguhan,
+  N+1 Mode War & lacak). Sintaks semua `.ps1` valid lewat parser PowerShell; PSScriptAnalyzer tidak terpasang.
+- **Uji nyata fase 13**:
+  - `siapkan_db` ke nama database baru: database terbentuk, 29 tabel, struktur kolom identik dengan `dreamtify_dev`,
+    charset utf8mb4, 20 template + 9 FAQ + 2 grup terisi, 0 pesanan. Dijalankan dua kali tanpa perubahan.
+  - Sandi salah, port salah, host tak dikenal, dan alamat jaringan tanpa izin: pesan jelas, kode keluar 1.
+  - `install.ps1 -NoService -NonInteractive` dua kali: lulus, hash `.env` tidak berubah.
+  - `prod.bat --service`: waitress hidup, halaman 200, 404 benar, CSS ber-hash termuat, CSP aktif, `logs/web.log` terisi.
+    `tugas.bat` (buat_owner, run_periodic) memakai database produksi. Django admin tanpa pelanggaran CSP.
+- **Audit fase 14** (mode produksi, data demo): 40 halaman publik & admin di lebar 360px tanpa scroll horizontal, gambar
+  ber-alt, input berlabel, tombol bernama. Beranda 275 KB, First Contentful Paint 140 ms (mesin lokal); form pesanan
+  62 KB, 100 ms. Tidak ada NIK di `logs/`. Semua nilai enum ada di docs/02 atau docs/03.
+  Diperbaiki: overflow form di HP, tabel fee, nama file poster panjang, 2 input tanpa label, `favicon.ico` 404, kontras
+  4 warna teks agar ≥ 4,5:1.
 
 - **2026-11-01, fase 10+11+12** — pytest di MariaDB: **259 lulus, 0 gagal** (+50 tes). pyflakes bersih.
   - Fase 10: judul kolom persis docs/07, NIK teks 16 digit, NIK tidak ikut tanpa izin (Admin `nik=1` diabaikan),
@@ -109,6 +125,40 @@ Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catata
 | XAMPP | MariaDB 10.4 (layanan `mysql`, port 3306) tetap ada, **tidak dipakai** (terlalu lama untuk Django 5.2) |
 | Git | repo di-init di `main` |
 
+## Skenario uji akhir (docs/11 §2)
+
+| # | Skenario | Hasil | Catatan |
+|---|---|---|---|
+| 1 | Event baru dari duplikat | ✅ | Otomatis; pengisian tanggal lewat ORM, form-nya diuji di `test_dashboard` |
+| 2 | Pesanan multi-baris | ✅ | Otomatis, angka tagihan dicek |
+| 3 | Bukti fee → verifikasi → Kotak Kabar | ✅ | Otomatis + browser |
+| 4 | Pelunasan → siap war | ✅ | Otomatis |
+| 5 | Pesanan VA & waiting list naik | ✅ | Otomatis |
+| 6 | Mode War: VA, klaim, hasil | ✅ | Otomatis + browser HP |
+| 7 | Refund & bukti di lacak | ✅ | Otomatis, refund Rp 4.700.000 sesuai rumus |
+| 8 | Penyerahan JASTIP & info JASWAR | ✅ | Otomatis + browser |
+| 9 | Selesai → testimoni → tampil | ✅ | Otomatis |
+| 10 | Ekspor Excel & link promotor | ✅ | Otomatis; **belum dibuka di aplikasi Excel** |
+| 11 | Batal setelah fee → HANGUS | ✅ | Otomatis |
+| 12 | Produksi di Windows bersih + restart | ⬜ | Perlu VM/server & Administrator. `install -NoService` dan `prod.bat` lulus di mesin dev |
+
+## Kriteria terima (docs/11 §3)
+
+| Kriteria | Status |
+|---|---|
+| Semua tes otomatis lulus di MariaDB | ✅ 277 lulus |
+| 12 skenario manual tanpa error 500 | ⚠️ 11 ✅, nomor 12 menunggu VM |
+| Lighthouse Performance ≥ 85, Accessibility ≥ 90 | ⚠️ Tidak dijalankan (`npx` mengunduh kode luar, tidak diizinkan). Diganti audit manual sesuai prompt fase 14 |
+| `check --deploy` tanpa ERROR | ✅ |
+| Tidak ada NIK di `logs\` | ✅ |
+| `docs/PANDUAN-ADMIN.md` | ✅ |
+
+## Belum diuji
+
+- Pendaftaran Scheduled Task, firewall, restart Windows, `-InstallMariaDB` (butuh Administrator / VM).
+- Koneksi **berhasil** ke MariaDB di server lain. Sudah teruji: koneksi lewat alamat jaringan sampai tahap login, dan
+  semua pesan gagal. User uji jaringan tidak bisa dibuat karena butuh root.
+
 ## Audit keamanan (docs/09)
 
 | § | Kontrol | Lokasi kode | Tes | Status |
@@ -135,6 +185,16 @@ Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catata
 ## Pertanyaan terbuka
 
 (hal ambigu yang diputuskan sementara dengan `# ASUMSI:` — pemilik perlu mengonfirmasi)
+
+**Fase 13–14**
+
+52. **Verifikasi sertifikat TLS tetap aktif untuk `mariadb-dump`.** Klien MariaDB 11.4 menolak sertifikat buatan sendiri
+    saat lewat jaringan (error 2026, terbukti di uji). Solusi: isi `DB_SSL_CA`, atau backup di server MariaDB. Pemilik
+    perlu memilih bila MariaDB di server lain memakai sertifikat bawaan.
+53. `date_hierarchy` Django admin dihapus agar aplikasi tidak butuh tabel zona waktu MariaDB (butuh root untuk mengisinya).
+54. `siapkan_db` berjalan setiap start web. Data lama tidak ikut pindah saat `.env` diubah; pindah data lewat backup + restore.
+55. Warna token `sky-600`, `pink-600`, `success`, `danger` sedikit digelapkan dari docs/06 agar kontras teks ≥ 4,5:1.
+56. `SECURE_PROXY_SSL_HEADER` hanya aktif dengan `TRUSTED_PROXY=1` (beda dari docs/09 §7, lihat nomor 50).
 
 **Fase 10–12**
 
@@ -249,7 +309,26 @@ django-environ 0.14.0, openpyxl 3.1.5, Pillow 13.0.0, cryptography 50.0.2;
 dev: pytest 9.1.1, pytest-django 4.14.0, freezegun 1.5.5.
 Vendor JS: htmx 2.0.11, `@alpinejs/csp` 3.17.4. Font: Fredoka & Nunito (variable, latin + latin-ext, OFL).
 
+## Ringkasan akhir
+
+Semua fase selesai; fase 13–14 punya catatan di atas. Yang masih perlu dari pemilik:
+
+1. Uji `install.bat` sebagai Administrator di server sungguhan (skenario 12), lalu restart server.
+2. Buka Excel promotor di aplikasi Excel dan cocokkan kolomnya.
+3. Putuskan penanganan TLS backup bila MariaDB di server lain (nomor 52).
+4. Konfirmasi pertanyaan terbuka, terutama nomor 38, 41, 44, 45.
+
+Ide pengembangan: payment gateway untuk verifikasi otomatis, WhatsApp API agar kabar terkirim tanpa tombol, layanan
+tiket lain, notifikasi admin saat ada bukti baru.
+
 ## Catatan untuk fase berikutnya
+
+**Dari fase 13–14:**
+
+- Perintah di server selalu lewat `scripts\tugas.bat` (mode produksi). `manage.py` langsung = mode dev.
+- `Invoke-DatabaseSetup` di `common.ps1`: root hanya dipakai bila MariaDB lokal dan user aplikasi belum bisa masuk.
+- `apps/core/management/commands/`: `siapkan_db`, `buat_owner`, `serve`, `backup_db`, `run_daily`.
+- `.venv` dibuat ulang paketnya bila `requirements*.txt` berubah; `install.bat` memakai `requirements.txt` saja.
 
 **Dari fase 10–12 (penting untuk fase 13):**
 

@@ -36,7 +36,6 @@ class AuditLogAdmin(admin.ModelAdmin):
     list_display = ("created_at", "actor_label", "action", "object_type", "object_id", "summary")
     list_filter = ("action",)
     search_fields = ("summary", "actor_label", "object_id")
-    date_hierarchy = "created_at"
 
     def has_add_permission(self, request):
         return False

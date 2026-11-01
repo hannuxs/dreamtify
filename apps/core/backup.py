@@ -44,6 +44,8 @@ def find_dump() -> str:
 def _option_file(db) -> str:
     password = db["PASSWORD"].replace("\\", "\\\\").replace('"', '\\"')
     text = f'[client]\nuser={db["USER"]}\npassword="{password}"\nhost={db["HOST"]}\nport={db["PORT"]}\n'
+    if settings.DB_SSL_CA:
+        text += f"ssl-ca={Path(settings.DB_SSL_CA).as_posix()}\n"
     handle, path = tempfile.mkstemp(prefix="dreamtify-opt-", suffix=".cnf")
     with os.fdopen(handle, "w", encoding="utf-8") as stream:
         stream.write(text)
@@ -67,7 +69,8 @@ def dump_database(target: Path) -> None:
             errors.seek(0)
             message = errors.read().decode("utf-8", "replace").strip()
         if code != 0:
-            raise BackupError(f"mariadb-dump gagal (kode {code}): {message[:300]}")
+            hint = " Isi DB_SSL_CA di .env dengan sertifikat CA server MariaDB." if "2026" in message else ""
+            raise BackupError(f"mariadb-dump gagal (kode {code}): {message[:300]}{hint}")
         partial.replace(target)
     finally:
         partial.unlink(missing_ok=True)

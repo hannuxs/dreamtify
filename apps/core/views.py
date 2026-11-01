@@ -5,6 +5,8 @@ from pathlib import Path
 from django.conf import settings
 from django.db import connection
 from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import redirect
+from django.templatetags.static import static
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
@@ -27,6 +29,10 @@ def health(request):
         {"status": "ok" if db_ok else "error", "db": db_ok},
         status=200 if db_ok else 503,
     )
+
+
+def favicon(request):
+    return redirect(static("img/favicon.ico"), permanent=True)
 
 
 PUBLIC_TYPES = {".jpg", ".jpeg", ".png", ".webp"}

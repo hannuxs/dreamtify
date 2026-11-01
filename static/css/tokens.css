@@ -41,25 +41,25 @@
   /* --- Warna brand (dari logo) --- */
   --navy-900: #052A45;
   --navy-700: #17476B;
-  --sky-600: #3E7FB0;
+  --sky-600: #37719C;
   --sky-400: #88B5D6;
   --cloud-200: #BCE2F5;
   --cloud-100: #E4F3FC;
   --cloud-50: #F5FBFF;
   --white: #FFFFFF;
   --pink-400: #F26877;
-  --pink-600: #C23A4B;
+  --pink-600: #BA3748;
   --pink-100: #FDE4E7;
   --sun-400: #F5B83D;
   --ink-600: #4A6175;
   --line: #D3E6F2;
 
   /* --- Warna status --- */
-  --success: #1E8E5A;
+  --success: #1A7C4F;
   --success-bg: #E3F6EC;
   --warning: #A15F00;
   --warning-bg: #FFF1D1;
-  --danger: #C8333F;
+  --danger: #C2313D;
   --danger-bg: #FDE6E8;
   --info: #2F6E9F;
   --info-bg: #E4F3FC;

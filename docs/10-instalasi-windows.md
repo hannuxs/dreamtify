@@ -1,5 +1,9 @@
 # 10 — Instalasi & Menjalankan di Windows
 
+> Panduan untuk pemilik: `docs/INSTALASI-SERVER.md`. Perubahan dari rancangan awal: `manage.py siapkan_db` berjalan
+> setiap start (buat database, migrate, cache, data awal), MariaDB boleh di server lain, tabel zona waktu MariaDB tidak
+> dibutuhkan, dan perintah di server lewat `scripts\tugas.bat` (mode produksi).
+
 ## 1. Kontrak perintah
 
 | Perintah | Dijalankan | Fungsi |

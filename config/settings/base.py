@@ -115,6 +115,10 @@ DATABASES = {
         },
     }
 }
+# Sertifikat CA server MariaDB (untuk database di server lain)
+DB_SSL_CA = env("DB_SSL_CA", default="")
+if DB_SSL_CA:
+    DATABASES["default"]["OPTIONS"]["ssl"] = {"ca": DB_SSL_CA}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---------------------------------------------------------------------------
@@ -208,6 +212,11 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin" if HTTPS else None
 # ---------------------------------------------------------------------------
 # Logging — ke logs/, dengan penyamar NIK / nomor panjang (docs/09 §2)
 # ---------------------------------------------------------------------------
+# Web produksi (prod.bat)
+WEB_HOST = env("WEB_HOST", default="0.0.0.0")
+WEB_PORT = env.int("WEB_PORT", default=8383)
+WAITRESS_THREADS = env.int("WAITRESS_THREADS", default=8)
+
 # Backup (docs/09 §9)
 BACKUP_DIR = BASE_DIR / env("BACKUP_DIR", default="backups")
 BACKUP_KEEP = env.int("BACKUP_KEEP", default=14)
@@ -246,6 +255,16 @@ LOGGING = {
             "filters": ["mask_sensitive"],
             "formatter": "masked",
         },
+        "web": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": LOGS_DIR / "web.log",
+            "when": "midnight",
+            "backupCount": 14,
+            "encoding": "utf-8",
+            "delay": True,
+            "filters": ["mask_sensitive"],
+            "formatter": "masked",
+        },
         "daily": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOGS_DIR / "daily.log",
@@ -262,5 +281,6 @@ LOGGING = {
         "django": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
         "django.db.backends": {"level": "WARNING"},
         "dreamtify.daily": {"handlers": ["console", "daily"], "level": "INFO", "propagate": False},
+        "waitress": {"handlers": ["console", "web"], "level": "INFO", "propagate": False},
     },
 }

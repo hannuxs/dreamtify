@@ -55,6 +55,7 @@ try {
     # 2. Impor
     $pw = ([string]$cfg.DB_PASSWORD).Replace('\', '\\').Replace('"', '\"')
     $optText = "[client]`r`nuser=$dbUser`r`npassword=`"$pw`"`r`nhost=$dbHost`r`nport=$dbPort`r`n"
+    if ($cfg.DB_SSL_CA) { $optText += "ssl-ca=$($cfg.DB_SSL_CA.Replace('\', '/'))`r`n" }
     [IO.File]::WriteAllText($optFile, $optText, (New-Object Text.UTF8Encoding($false)))
     $p = Start-Process -FilePath (Join-Path $bin 'mariadb.exe') `
         -ArgumentList "--defaults-extra-file=`"$optFile`"", '--default-character-set=utf8mb4', $Target `

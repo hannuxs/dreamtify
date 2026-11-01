@@ -10,7 +10,7 @@
   {% for phase, rows in grid %}
     <section class="card stack" aria-labelledby="fee-{{ phase.pk }}">
       <h3 id="fee-{{ phase.pk }}" class="card__title">{{ phase.name }}</h3>
-      <table class="fee-table">
+      <div class="table-wrap"><table class="fee-table">
         <thead><tr><th scope="col">Layanan</th><th scope="col">VIP</th><th scope="col">Reguler</th></tr></thead>
         <tbody>
           {% for service, cells in rows %}
@@ -24,7 +24,7 @@
             </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
     </section>
   {% endfor %}
   <div class="form-actions">

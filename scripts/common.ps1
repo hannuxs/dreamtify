@@ -56,8 +56,9 @@ function Get-FileSha256([string[]]$Paths) {
     return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '')
 }
 
-function Initialize-Venv([string]$RequirementsFile) {
-    <# Buat .venv bila belum ada; pasang ulang paket bila requirements berubah. #>
+function Initialize-Venv([string]$RequirementsFile, [switch]$AllowPyMySql) {
+    <# Buat .venv bila belum ada; pasang ulang paket bila requirements berubah.
+       -AllowPyMySql: bila mysqlclient gagal, pasang tanpa itu dan set DB_DRIVER=pymysql. #>
     $venvPy = Get-VenvPython
     if (-not (Test-Path $venvPy)) {
         $py = Find-Python312
@@ -84,6 +85,14 @@ function Initialize-Venv([string]$RequirementsFile) {
     Write-Info "Memasang paket dari $RequirementsFile (butuh internet)..."
     & $venvPy -m pip install --disable-pip-version-check -q --upgrade pip
     & $venvPy -m pip install --disable-pip-version-check -q -r $reqPath
+    if ($LASTEXITCODE -ne 0 -and $AllowPyMySql) {
+        Write-Warn 'Paket gagal dipasang, mencoba tanpa mysqlclient (memakai PyMySQL)...'
+        $filtered = Join-Path $env:TEMP 'dreamtify-requirements.txt'
+        Get-Content $reqPath | Where-Object { $_ -notmatch '^mysqlclient' } | Set-Content $filtered -Encoding ascii
+        & $venvPy -m pip install --disable-pip-version-check -q -r $filtered
+        Remove-Item $filtered -Force -ErrorAction SilentlyContinue
+        if ($LASTEXITCODE -eq 0) { Set-DotEnvValue 'DB_DRIVER' 'pymysql' }
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Fail 'pip install gagal.' 'Cek koneksi internet, lalu jalankan ulang. Bila mysqlclient gagal, set DB_DRIVER=pymysql di .env.'
         exit 1
@@ -220,6 +229,108 @@ function Invoke-MariaDbSql {
     }
 }
 
+function Test-LocalDbHost([string]$HostName) {
+    return @('127.0.0.1', 'localhost', '::1', $env:COMPUTERNAME) -contains $HostName
+}
+
+function Test-WebHealth([int]$Port) {
+    try {
+        return (Invoke-WebRequest "http://127.0.0.1:$Port/sehat/" -UseBasicParsing -TimeoutSec 3).StatusCode -eq 200
+    } catch {
+        return $false
+    }
+}
+
+function Invoke-DatabaseSetup {
+    <#
+      Dipakai dev/prod/install: siapkan database sesuai .env (host boleh di server lain).
+      Akses root hanya dipakai bila MariaDB ada di komputer ini dan user aplikasi belum bisa masuk.
+      Mengembalikan $true bila siap.
+    #>
+    param([switch]$AllowPrompt)
+    $cfg = Read-DotEnv
+    $dbHost = if ($cfg.DB_HOST) { $cfg.DB_HOST } else { '127.0.0.1' }
+    $dbPort = if ($cfg.DB_PORT) { [int]$cfg.DB_PORT } else { 3309 }
+    $local = Test-LocalDbHost $dbHost
+
+    if (-not (Test-TcpPort $dbHost $dbPort)) {
+        if ($local) {
+            Write-Fail "MariaDB tidak bisa dihubungi di ${dbHost}:${dbPort}." "Pastikan layanan MariaDB berjalan dan memakai port $dbPort (atau ubah DB_PORT di .env)."
+        } else {
+            Write-Fail "Server MariaDB ${dbHost}:${dbPort} tidak bisa dihubungi." 'Cek DB_HOST & DB_PORT di .env, firewall, dan bind-address di server MariaDB.'
+        }
+        return $false
+    }
+    Write-Ok "MariaDB terhubung di ${dbHost}:${dbPort}"
+
+    $venvPy = Get-VenvPython
+    $check = (& $venvPy manage.py cek_db | Select-Object -Last 1)
+    if ($check -like 'GAGAL:*') {
+        $code = ($check -split ':')[1]
+        if ($code -eq '1049') {
+            # Database belum ada: siapkan_db mencoba membuatnya dengan user aplikasi
+            Invoke-Manage siapkan_db
+            if ($LASTEXITCODE -eq 0) { return $true }
+        }
+        if ($local -and ($code -in '1044', '1045', '1049')) {
+            $rootPw = $script:RootPw
+            if (-not $rootPw) { $rootPw = $env:MARIADB_ROOT_PASSWORD }
+            if (-not $rootPw -and $AllowPrompt) {
+                $rootPw = ConvertFrom-SecureToPlain (Read-Host 'Database/user belum siap. Password root MariaDB (tidak disimpan)' -AsSecureString)
+            }
+            if (-not $rootPw) {
+                Write-Fail "Database atau user belum siap ($check)." 'Jalankan install.bat, atau cek DB_USER / DB_PASSWORD di .env.'
+                return $false
+            }
+            $bin = Find-MariaDbBin $cfg.MARIADB_BIN
+            if (-not $bin) {
+                Write-Fail 'Folder bin MariaDB tidak ditemukan.' 'Isi MARIADB_BIN di .env, mis. C:\Program Files\MariaDB 11.4\bin'
+                return $false
+            }
+            $names = @($cfg.DB_NAME, $cfg.DB_NAME_DEV) | Where-Object { $_ }
+            $res = Initialize-AppDatabase -Bin $bin -HostName $dbHost -Port $dbPort -RootPassword $rootPw `
+                -Databases $names -User $cfg.DB_USER -Password $cfg.DB_PASSWORD
+            if (-not $res.Ok) {
+                Write-Fail "Gagal membuat database: $($res.Output)" 'Cek password root MariaDB.'
+                return $false
+            }
+            Write-Ok "Database dan user '$($cfg.DB_USER)' siap"
+        } elseif ($code -ne '1049') {
+            # siapkan_db mencetak penjelasan sesuai kode error
+            Invoke-Manage siapkan_db
+            return $false
+        } else {
+            return $false
+        }
+    }
+    Invoke-Manage siapkan_db
+    return ($LASTEXITCODE -eq 0)
+}
+
+function Register-DreamtifyTasks {
+    <# Tiga Scheduled Task (akun SYSTEM). Idempoten: task lama diperbarui. #>
+    $root = $script:ProjectRoot
+    $system = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+    $webSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+        -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
+    $jobSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+        -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
+    $tugas = Join-Path $root 'scripts\tugas.bat'
+
+    Register-ScheduledTask -TaskName 'Dreamtify Web' -Force -Principal $system -Settings $webSettings `
+        -Trigger (New-ScheduledTaskTrigger -AtStartup) `
+        -Action (New-ScheduledTaskAction -Execute (Join-Path $root 'prod.bat') -Argument '--service' -WorkingDirectory $root) | Out-Null
+
+    $every15 = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 15)
+    Register-ScheduledTask -TaskName 'Dreamtify Berkala' -Force -Principal $system -Settings $jobSettings -Trigger $every15 `
+        -Action (New-ScheduledTaskAction -Execute $tugas -Argument 'run_periodic' -WorkingDirectory $root) | Out-Null
+
+    Register-ScheduledTask -TaskName 'Dreamtify Harian' -Force -Principal $system -Settings $jobSettings `
+        -Trigger (New-ScheduledTaskTrigger -Daily -At '02:30') `
+        -Action (New-ScheduledTaskAction -Execute $tugas -Argument 'run_daily' -WorkingDirectory $root) | Out-Null
+    Write-Ok 'Scheduled Task terdaftar: Dreamtify Web, Berkala, Harian'
+}
+
 function Initialize-AppDatabase {
     <# Buat database (utf8mb4_unicode_ci) + user aplikasi dan hak akses. Idempoten. #>
     param([string]$Bin, [string]$HostName, [int]$Port, [string]$RootPassword,
@@ -238,41 +349,6 @@ function Initialize-AppDatabase {
         [void]$sql.AppendLine("GRANT ALL PRIVILEGES ON ``test_dreamtify%``.* TO '$User'@'$h';")
     }
     [void]$sql.AppendLine('FLUSH PRIVILEGES;')
-    return Invoke-MariaDbSql -Bin $Bin -HostName $HostName -Port $Port -RootPassword $RootPassword -Sql $sql.ToString()
-}
-
-function Install-TimeZoneTables {
-    <#
-      Isi tabel zona waktu MariaDB (dibutuhkan Django untuk lookup tanggal dengan
-      USE_TZ, mis. CONVERT_TZ). Di Windows tidak ada /usr/share/zoneinfo, jadi
-      sumbernya paket Python `tzdata`. Hanya zona yang dipakai; idempoten.
-    #>
-    param([string]$Bin, [string]$HostName, [int]$Port, [string]$RootPassword,
-          [string[]]$Zones = @('UTC', 'Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'))
-    $venvPy = Get-VenvPython
-    $zoneDir = (& $venvPy -c "import tzdata, os; print(os.path.join(os.path.dirname(tzdata.__file__), 'zoneinfo'))").Trim()
-    $tool = Join-Path $Bin 'mariadb-tzinfo-to-sql.exe'
-    if (-not (Test-Path $tool)) { $tool = Join-Path $Bin 'mysql_tzinfo_to_sql.exe' }
-    $sql = New-Object Text.StringBuilder
-    [void]$sql.AppendLine('USE mysql;')
-    foreach ($zone in ($Zones | Select-Object -Unique)) {
-        $file = Join-Path $zoneDir ($zone -replace '/', '\')
-        if (-not (Test-Path $file)) { continue }
-        [void]$sql.AppendLine("SET @old_tz = (SELECT Time_zone_id FROM time_zone_name WHERE Name = '$zone');")
-        [void]$sql.AppendLine('DELETE FROM time_zone_transition WHERE Time_zone_id = @old_tz;')
-        [void]$sql.AppendLine('DELETE FROM time_zone_transition_type WHERE Time_zone_id = @old_tz;')
-        [void]$sql.AppendLine('DELETE FROM time_zone WHERE Time_zone_id = @old_tz;')
-        [void]$sql.AppendLine("DELETE FROM time_zone_name WHERE Name = '$zone';")
-        $out = [IO.Path]::GetTempFileName()
-        try {
-            $p = Start-Process -FilePath $tool -ArgumentList "`"$file`"", $zone -RedirectStandardOutput $out `
-                -NoNewWindow -Wait -PassThru
-            if ($p.ExitCode -ne 0) { return @{ Ok = $false; Output = "tzinfo gagal untuk $zone" } }
-            [void]$sql.AppendLine([IO.File]::ReadAllText($out))
-        } finally {
-            Remove-Item $out -Force -ErrorAction SilentlyContinue
-        }
-    }
     return Invoke-MariaDbSql -Bin $Bin -HostName $HostName -Port $Port -RootPassword $RootPassword -Sql $sql.ToString()
 }
 

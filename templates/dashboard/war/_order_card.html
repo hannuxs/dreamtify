@@ -34,7 +34,7 @@
                 <div class="war-more__body">
                   <select class="select" name="other" aria-label="Kategori lain">{% for c in categories %}<option value="{{ c.pk }}">{{ c.name }} ({{ c.get_fee_tier_display }})</option>{% endfor %}</select>
                   <button class="btn btn--secondary btn--sm" type="submit" name="pick" value="other">Dapat kategori ini</button>
-                  <input class="input" name="ticket_reference" placeholder="Kode tiket / booking (opsional)" maxlength="100" autocomplete="off">
+                  <input class="input" name="ticket_reference" aria-label="Kode tiket atau booking" placeholder="Kode tiket / booking (opsional)" maxlength="100" autocomplete="off">
                 </div>
               </details>
             {% else %}
