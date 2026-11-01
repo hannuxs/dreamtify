@@ -4,11 +4,17 @@ import io
 from django.http import HttpResponse
 from django.utils import timezone
 from openpyxl import Workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 HEADER_FILL = PatternFill("solid", fgColor="BCE2F5")
 XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def clean_text(value) -> str:
+    """Karakter kontrol membuat openpyxl gagal menyimpan; isi customer bisa memuatnya."""
+    return ILLEGAL_CHARACTERS_RE.sub("", str(value))
 
 
 def build_workbook(sheets) -> Workbook:
@@ -23,7 +29,10 @@ def build_workbook(sheets) -> Workbook:
             cell.fill = HEADER_FILL
             cell.alignment = Alignment(vertical="center", wrap_text=True)
         for row in rows:
-            ws.append(list(row))
+            ws.append([clean_text(v) if isinstance(v, str) else v for v in row])
+            for cell in ws[ws.max_row]:
+                if cell.data_type == "f":  # isi customer berawalan "=" tidak boleh jadi rumus
+                    cell.data_type = "s"
         for col in text_cols:  # nomor rekening / WA / NIK disimpan sebagai teks
             for cell in ws.iter_rows(min_row=2, min_col=col + 1, max_col=col + 1):
                 cell[0].number_format = "@"

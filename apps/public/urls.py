@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import lacak_views, order_views, views
+from . import lacak_views, order_views, promotor_views, views
 
 app_name = "public"
 
@@ -19,6 +19,9 @@ urlpatterns = [
     path("lacak/<str:code>/va/<int:va_id>/klaim/", lacak_views.track_va_claim, name="track_va_claim"),
     path("lacak/<str:code>/va-mandiri/", lacak_views.track_va_mandiri, name="track_va_mandiri"),
     path("berkas/<slug:kind>/<int:pk>/", lacak_views.private_file, name="private_file"),
+    path("p/<str:token>/", promotor_views.promotor_page, name="promotor"),
+    path("p/<str:token>/unduh.<slug:fmt>", promotor_views.promotor_download, name="promotor_download"),
+    path("p/<str:token>/bukti/<int:payment_id>/", promotor_views.promotor_proof, name="promotor_proof"),
     # Hanya aktif saat DEBUG (view mengembalikan 404 di produksi)
     path("_komponen/", views.component_gallery, name="component_gallery"),
     path("_komponen/dashboard/", views.dashboard_preview, name="dashboard_preview"),

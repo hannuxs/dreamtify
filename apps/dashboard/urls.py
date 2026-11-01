@@ -1,6 +1,16 @@
 from django.urls import path
 
-from . import views, views_events, views_inbox, views_orders, views_owner, views_settlement, views_verify, views_war
+from . import (
+    views,
+    views_events,
+    views_inbox,
+    views_orders,
+    views_owner,
+    views_reports,
+    views_settlement,
+    views_verify,
+    views_war,
+)
 
 app_name = "dashboard"
 
@@ -48,6 +58,10 @@ urlpatterns = [
     path("kabar/<int:pk>/kirim/", views_inbox.inbox_send, name="inbox_send"),
     path("kabar/<int:pk>/lewati/", views_inbox.inbox_skip, name="inbox_skip"),
     path("kabar/<int:pk>/ubah/", views_inbox.inbox_edit, name="inbox_edit"),
+    # Rekap & ekspor
+    path("rekap/", views_reports.reports, name="reports"),
+    path("rekap/promotor.<slug:fmt>", views_reports.promotor_export, name="promotor_export"),
+    path("rekap/keuangan.xlsx", views_reports.finance_export, name="finance_export"),
     # Owner
     path("pengaturan/", views_owner.redirect_settings, name="settings"),
     path("pengaturan/template/<slug:key>/", views_inbox.template_edit, name="template_edit"),

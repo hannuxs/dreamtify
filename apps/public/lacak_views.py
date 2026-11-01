@@ -31,7 +31,7 @@ from apps.dashboard.permissions import is_admin
 from apps.orders.models import Order, OrderLine, Payment, TicketSlot, VaNotice
 from apps.orders.selectors import get_order
 from apps.orders.services import codes, guidance, settlement, transitions, updates, va as va_service
-from apps.orders.services.links import check_promotor_file_signature, tracking_url
+from apps.orders.services.links import tracking_url
 from apps.orders.services.transitions import InvalidTransition
 from apps.orders.services.validation import HolderData
 
@@ -249,20 +249,19 @@ def private_file(request, kind, pk):
     if not stored:
         raise Http404
     order = owner(obj)
-    allowed = (
-        is_admin(request.user)
-        or access.has_access(request, order.code)
-        or (kind == "bukti" and check_promotor_file_signature(order.event, kind, pk, request.GET.get("s", "")))
-    )
-    if not allowed:
+    if not (is_admin(request.user) or access.has_access(request, order.code)):
         raise Http404
+    return serve_private(stored, f"{kind}-{order.code}")
+
+
+def serve_private(stored, name: str):
     try:
         handle = stored.open("rb")
     except FileNotFoundError:
         raise Http404 from None
     ext = Path(stored.name).suffix.lower()
     response = FileResponse(handle, content_type=mimetypes.guess_type(stored.name)[0] or "application/octet-stream",
-                            as_attachment=False, filename=f"{kind}-{order.code}{ext}")
+                            as_attachment=False, filename=f"{name}{ext}")
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "private, no-store"
     return response

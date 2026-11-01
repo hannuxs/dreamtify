@@ -232,3 +232,67 @@ def summarize(order) -> Summary:
         balance=paid - ref - final,
         results_final=cancelled or all_results_in(order),
     )
+
+
+# ---------------------------------------------------------------------------
+# Rekap keuangan (docs/05 §10)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class OrderFinance:
+    order: object
+    summary: Summary
+    fee_income: int  # pendapatan fee final (0 bila belum final)
+    ticket_price: int  # harga tiket final titip bayar (0 bila belum final)
+    held: int  # uang customer yang masih dipegang
+
+
+@dataclass
+class FinanceRecap:
+    fee_received: int = 0
+    pelunasan_received: int = 0  # termasuk pembayaran kekurangan
+    refund_out: int = 0
+    held: int = 0  # hak refund belum ditransfer + seluruh uang pesanan yang belum final
+    shortfall: int = 0
+    fee_income: int = 0  # Σ fee_final pesanan yang sudah final
+    ticket_price: int = 0  # Σ harga tiket final (titip bayar)
+
+    @property
+    def money_in(self) -> int:
+        return self.fee_received + self.pelunasan_received
+
+
+def order_finance(order) -> OrderFinance:
+    """ASUMSI: pesanan belum final (belum semua hasil masuk) belum menghasilkan pendapatan;
+    seluruh uangnya dihitung tertahan. Bagian hangus pesanan batal = pendapatan."""
+    summary = summarize(order)
+    if not summary.results_final:
+        return OrderFinance(order, summary, 0, 0, summary.paid_in - summary.refunded)
+    cancelled = order.status in (OrderStatus.DIBATALKAN, OrderStatus.HANGUS)
+    price = 0 if cancelled else war_totals(order)[1]
+    return OrderFinance(order, summary, summary.final_due - price, price, summary.refund_due)
+
+
+def finance_recap(orders) -> tuple[FinanceRecap, list]:
+    """(rekap, [OrderFinance]). Selalu: masuk − refund = fee + harga tiket + tertahan − kekurangan."""
+    recap = FinanceRecap()
+    rows = []
+    for order in orders:
+        row = order_finance(order)
+        rows.append(row)
+        for payment in order.payments.all():
+            if payment.status != PaymentStatus.DITERIMA:
+                continue
+            amount = payment.amount_received or 0
+            if payment.kind == PaymentKind.FEE:
+                recap.fee_received += amount
+            elif payment.kind == PaymentKind.REFUND:
+                recap.refund_out += amount
+            else:
+                recap.pelunasan_received += amount
+        recap.held += row.held
+        recap.fee_income += row.fee_income
+        recap.ticket_price += row.ticket_price
+        if row.summary.results_final:
+            recap.shortfall += row.summary.shortfall
+    return recap, rows

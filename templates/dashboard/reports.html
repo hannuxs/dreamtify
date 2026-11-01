@@ -1,0 +1,81 @@
+{% extends "base_dashboard.html" %}
+{% load ui %}
+
+{% block title %}Rekap & Ekspor{% endblock %}
+{% block page_title %}Rekap & Ekspor{% endblock %}
+
+{% block content %}
+<div class="stack">
+  <h1 class="page-title">Rekap &amp; Ekspor</h1>
+
+  {% if event %}
+  <form method="get" class="card filter-bar filter-bar--3">
+    <select class="select" name="event" aria-label="Event">
+      {% for e in events %}<option value="{{ e.pk }}"{% if e.pk == event.pk %} selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+    <select class="select" name="phase" aria-label="Tahap"><option value="">Semua tahap</option>
+      {% for p in phases %}<option value="{{ p.pk }}"{% if phase and phase.pk == p.pk %} selected{% endif %}>{{ p.name }}</option>{% endfor %}
+    </select>
+    <label class="check"><input type="checkbox" name="unpaid" value="1"{% if unpaid %} checked{% endif %}><span>Termasuk yang belum bayar</span></label>
+    <button class="btn btn--secondary btn--sm" type="submit">Tampilkan</button>
+  </form>
+
+  <section class="card stack" aria-labelledby="ekspor">
+    <h2 id="ekspor" class="card__title">Excel format promotor</h2>
+    <p class="text-small text-muted">Kolom sama persis dengan Google Form lama. Default: pesanan yang fee-nya sudah diterima dan tidak batal.
+      {% if stats.total %}Sudah diunduh {{ stats.total }} kali, terakhir {{ stats.last.created_at|date:"j M Y H.i" }} WIB.{% endif %}</p>
+    <form method="get" action="{% url 'dashboard:promotor_export' 'xlsx' %}" class="stack stack-sm">
+      <input type="hidden" name="event" value="{{ event.pk }}">
+      {% if phase %}<input type="hidden" name="phase" value="{{ phase.pk }}">{% endif %}
+      {% if unpaid %}<input type="hidden" name="unpaid" value="1">{% endif %}
+      {% if is_owner %}<label class="check"><input type="checkbox" name="nik" value="1"><span>Sertakan No. KTP lengkap (tercatat di log)</span></label>{% endif %}
+      <div class="cluster">
+        <button class="btn btn--primary" type="submit">{% icon "download" %}<span>Unduh Excel</span></button>
+        <button class="btn btn--secondary" type="submit" formaction="{% url 'dashboard:promotor_export' 'csv' %}">{% icon "download" %}<span>Unduh CSV</span></button>
+      </div>
+    </form>
+    <div class="cluster">
+      <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:refund_export' %}?event={{ event.pk }}">{% icon "download" %}<span>Daftar refund</span></a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:handover_export' %}?event={{ event.pk }}">{% icon "download" %}<span>Daftar penyerahan gelang</span></a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:event_edit' event.pk 'promotor' %}">Link promotor</a>
+    </div>
+  </section>
+
+  <section class="card stack" aria-labelledby="ringkas">
+    <h2 id="ringkas" class="card__title">Rekap ringkas</h2>
+    <p class="text-small">{{ recap.orders }} pesanan · {{ recap.tickets }} tiket · {{ recap.secured }} secured</p>
+    {% if recap.categories %}
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Kategori</th><th>Diminta sebagai utama</th><th>Secured</th></tr></thead>
+        <tbody>{% for r in recap.categories %}<tr><td data-label="Kategori"><strong>{{ r.name }}</strong></td><td data-label="Diminta sebagai utama">{{ r.requested }}</td><td data-label="Secured">{{ r.secured }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Layanan</th><th>Pesanan</th><th>Tiket</th><th>Secured</th></tr></thead>
+        <tbody>{% for r in recap.services %}<tr><td data-label="Layanan"><strong>{{ r.name }}</strong></td><td data-label="Pesanan">{{ r.orders }}</td><td data-label="Tiket">{{ r.tickets }}</td><td data-label="Secured">{{ r.secured }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Metode bayar</th><th>Pesanan</th><th>Tiket</th></tr></thead>
+        <tbody>{% for r in recap.methods %}<tr><td data-label="Metode bayar"><strong>{{ r.name }}</strong></td><td data-label="Pesanan">{{ r.orders }}</td><td data-label="Tiket">{{ r.tickets }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    {% else %}
+      <p class="text-small text-muted">Belum ada data untuk filter ini.</p>
+    {% endif %}
+  </section>
+
+  {% if is_owner %}
+  <section class="card stack" aria-labelledby="keuangan">
+    <div class="cluster cluster-between">
+      <h2 id="keuangan" class="card__title">Rekap keuangan</h2>
+      <a class="btn btn--ghost btn--sm" href="{% url 'dashboard:finance_export' %}?event={{ event.pk }}{% if phase %}&amp;phase={{ phase.pk }}{% endif %}">{% icon "download" %}<span>Excel keuangan</span></a>
+    </div>
+    <dl class="finance-list">
+      {% for label, amount in finance_rows %}<div><dt>{{ label }}</dt><dd class="money">{{ amount|rupiah }}</dd></div>{% endfor %}
+    </dl>
+    <p class="text-small text-muted">Saldo tertahan = hak refund yang belum ditransfer, ditambah seluruh uang pesanan yang hasil war-nya belum final.</p>
+  </section>
+  {% endif %}
+  {% else %}
+    {% include "components/empty_state.html" with mascot="happy" title="Belum ada event" text="Buat event dulu untuk melihat rekap." %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -12,6 +12,7 @@ from apps.core.enums import EventStatus, ServiceType
 from apps.core.models import SiteSetting
 from apps.events import services as event_services
 from apps.events.models import Event, FeeRule
+from apps.exports.recap import download_stats
 
 from .forms import (
     CategoryFormSet,
@@ -225,6 +226,7 @@ def _render_edit(request, event, tab, tab_ctx, *, blocked=None, toast=None, stat
         "checklist": event_services.checklist(event),
         "public_url": request.build_absolute_uri(reverse("public:event_detail", args=[event.slug])),
         "promotor_url": request.build_absolute_uri(f"/p/{event.promotor_token}/"),
+        "promotor_stats": download_stats(event) if tab == "promotor" else None,
         "blocked": blocked or [],
         "is_owner": is_owner(request.user),
         "service_labels": dict(ServiceType.choices),

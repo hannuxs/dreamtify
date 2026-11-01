@@ -1,0 +1,55 @@
+{% extends "base_public.html" %}
+{% load ui %}
+
+{% block title %}Data {{ event.name }} — {{ brand.name }}{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block content %}
+<div class="container container--narrow stack section">
+  <header class="stack stack-sm">
+    <p class="eyebrow">Rekap untuk promotor{% if event.promotor_name %} · {{ event.promotor_name }}{% endif %}</p>
+    <h1>{{ event.name }}</h1>
+    <p class="text-small text-muted">Data per {{ now|date:"j F Y · H.i" }} WIB</p>
+  </header>
+
+  {% if error %}<p class="alert alert--warning">{% icon "info" %}<span>{{ error }}</span></p>{% endif %}
+
+  {% if phases|length > 1 %}
+    <form method="get" class="cluster">
+      <select class="select select--auto" name="tahap" aria-label="Pilih tahap">
+        <option value="">Semua tahap</option>
+        {% for p in phases %}<option value="{{ p.pk }}"{% if phase and phase.pk == p.pk %} selected{% endif %}>{{ p.name }}</option>{% endfor %}
+      </select>
+      <button class="btn btn--secondary btn--sm" type="submit">Tampilkan</button>
+    </form>
+  {% endif %}
+
+  <section class="card stack" aria-labelledby="unduh">
+    <h2 id="unduh" class="card__title">Unduh data pembeli</h2>
+    <div class="cluster">
+      <a class="btn btn--primary" href="{% url 'public:promotor_download' event.promotor_token 'xlsx' %}{{ query }}">{% icon "download" %}<span>Unduh Excel</span></a>
+      <a class="btn btn--secondary" href="{% url 'public:promotor_download' event.promotor_token 'csv' %}{{ query }}">{% icon "download" %}<span>Unduh CSV</span></a>
+    </div>
+    <p class="text-small text-muted">Excel berisi data pembeli, hasil per tiket, dan rekap. Buka file Excel bila ingin
+      No. KTP dan No WA tampil utuh; CSV ditujukan untuk diolah sistem.</p>
+  </section>
+
+  <section class="card stack" aria-labelledby="ringkas">
+    <h2 id="ringkas" class="card__title">Ringkasan</h2>
+    <p class="text-small">{{ recap.orders }} pesanan · {{ recap.tickets }} tiket · {{ recap.secured }} secured</p>
+    {% if recap.categories %}
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Kategori</th><th>Pesanan</th><th>Tiket</th><th>Secured</th></tr></thead>
+        <tbody>
+          {% for row in recap.categories %}
+            <tr><td data-label="Kategori"><strong>{{ row.name }}</strong></td><td data-label="Pesanan">{{ row.orders }}</td>
+              <td data-label="Tiket">{{ row.requested }}</td><td data-label="Secured">{{ row.secured }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    {% else %}
+      <p class="text-small text-muted">Belum ada pesanan yang fee-nya diterima.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

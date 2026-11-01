@@ -1,12 +1,20 @@
 {% load ui %}
 <section class="card stack">
   <h3 class="card__title">Link rahasia promotor</h3>
-  <p class="text-muted text-small">Promotor bisa mengunduh rekap data pembeli sendiri lewat link ini
-    (halamannya dibangun di fase rekap &amp; ekspor). Link hanya berfungsi bila diaktifkan.</p>
+  <p class="text-muted text-small">Promotor bisa mengunduh rekap data pembeli sendiri lewat link ini.
+    Halaman hanya terbuka bila diaktifkan. Link bukti transfer di dalam Excel tetap berlaku sampai link diganti
+    atau event diarsip.</p>
   <div class="copy-row">
     <code class="copy-row__link">{{ promotor_url }}</code>
     {% include "components/copy_button.html" with value=promotor_url label="Salin link" toast="Link promotor tersalin ✓" %}
   </div>
+  <p class="text-small">
+    {% if promotor_stats.total %}Diunduh <strong>{{ promotor_stats.total }} kali</strong> ({{ promotor_stats.via_link }} lewat link promotor).
+      Terakhir {{ promotor_stats.last.created_at|date:"j M Y H.i" }} WIB ·
+      {% if promotor_stats.last.data.via == "link" %}link promotor{% else %}{{ promotor_stats.last.actor_label }}{% endif %} ·
+      {{ promotor_stats.last.data.format|upper }} · {% if promotor_stats.last.data.include_nik %}dengan NIK{% else %}tanpa NIK{% endif %}
+    {% else %}Belum pernah diunduh.{% endif %}
+  </p>
   <div x-data="modal">
     <button type="button" class="btn btn--danger btn--sm" @click="show">Ganti link</button>
     <dialog class="modal" x-ref="dialog" @click="backdrop" aria-labelledby="regen-title">

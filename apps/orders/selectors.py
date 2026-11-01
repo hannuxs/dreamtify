@@ -60,6 +60,11 @@ def _with_money(qs):
             .distinct().select_related("event", "phase").prefetch_related(_lines_prefetch(), "payments"))
 
 
+def orders_with_money(event, phase=None) -> QuerySet:
+    qs = _with_money(Order.objects.filter(event=event))
+    return qs.filter(phase=phase) if phase else qs
+
+
 def refund_queue(event=None) -> list:
     """[(order, summary)] dengan SALDO > 0 setelah hasil final / batal (apa pun statusnya).
     ASUMSI: kelebihan bayar sebelum war diselesaikan setelah war (bukan masuk antrian)."""

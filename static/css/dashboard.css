@@ -312,3 +312,9 @@ kbd { font-family: var(--font-body); font-size: 0.75em; font-weight: 800; paddin
 .pay-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
 .pay-list li { display: flex; flex-direction: column; gap: 4px; padding-bottom: var(--sp-3); border-bottom: 1px dashed var(--line); }
 .pay-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+
+/* --- Rekap keuangan --- */
+.finance-list { margin: 0; }
+.finance-list > div { display: flex; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px dashed var(--line); }
+.finance-list > div:last-child { border-bottom: 0; font-weight: 800; }
+.finance-list dd { margin: 0; white-space: nowrap; }
