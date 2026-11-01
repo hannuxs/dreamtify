@@ -203,5 +203,6 @@ def audit_log(request):
     }, active="log")
 
 
+@owner_required
 def redirect_settings(request):
     return redirect("dashboard:settings_tab", tab="brand")

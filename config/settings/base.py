@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.middleware.SecurityHeadersMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -196,16 +197,22 @@ FIELD_ENCRYPTION_KEYS = env.list("FIELD_ENCRYPTION_KEYS", default=[])
 NIK_HASH_PEPPER = env("NIK_HASH_PEPPER", default="")
 
 # ---------------------------------------------------------------------------
-# Header keamanan dasar (lengkap di fase 12)
+# Header keamanan (CSP & Permissions-Policy di apps.core.middleware)
 # ---------------------------------------------------------------------------
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "same-origin"
-SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+# Browser mengabaikan & memperingatkan header ini di HTTP polos
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin" if HTTPS else None
 
 # ---------------------------------------------------------------------------
 # Logging — ke logs/, dengan penyamar NIK / nomor panjang (docs/09 §2)
 # ---------------------------------------------------------------------------
+# Backup (docs/09 §9)
+BACKUP_DIR = BASE_DIR / env("BACKUP_DIR", default="backups")
+BACKUP_KEEP = env.int("BACKUP_KEEP", default=14)
+MARIADB_BIN = env("MARIADB_BIN", default="")
+
 LOGS_DIR = BASE_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
 
@@ -239,10 +246,21 @@ LOGGING = {
             "filters": ["mask_sensitive"],
             "formatter": "masked",
         },
+        "daily": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "daily.log",
+            "maxBytes": 1024 * 1024,
+            "backupCount": 5,
+            "encoding": "utf-8",
+            "delay": True,
+            "filters": ["mask_sensitive"],
+            "formatter": "masked",
+        },
     },
     "root": {"handlers": ["console", "file"], "level": "INFO"},
     "loggers": {
         "django": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
         "django.db.backends": {"level": "WARNING"},
+        "dreamtify.daily": {"handlers": ["console", "daily"], "level": "INFO", "propagate": False},
     },
 }

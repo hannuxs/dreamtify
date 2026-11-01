@@ -16,15 +16,34 @@ Diperbarui oleh Claude Code di akhir setiap fase. Jangan dihapus.
 | 07 | Mode war & hasil | ✅ selesai | 2026-10-26 | Mode War HP (1 ketukan/tiket, undo, konflik versi, refresh 15 dtk), VA admin & VA mandiri, lacak live |
 | 08 | Penyelesaian (refund, gelang, e-tiket) | ✅ selesai | 2026-10-26 | Antrian refund/kekurangan + bukti bertahap, penyerahan massal, e-tiket, ekspor Excel |
 | 09 | Kabar WA | ✅ selesai | 2026-10-26 | Kotak Kabar (wa.me), mode beruntun, kabar manual, edit template (Owner), email opsional, pengingat |
-| 10 | Rekap & ekspor promotor | ⬜ belum | | |
-| 11 | Testimoni, beranda, FAQ | ⬜ belum | | |
-| 12 | Keamanan & tugas harian | ⬜ belum | | |
+| 10 | Rekap & ekspor promotor | ✅ selesai | 2026-11-01 | Excel 3 sheet + CSV, rekap ringkas & keuangan, link promotor |
+| 11 | Testimoni, beranda, FAQ | ✅ selesai | 2026-11-01 | Beranda final, testimoni + moderasi, FAQ/syarat/privasi, SEO, `seed_demo` |
+| 12 | Keamanan & tugas harian | ✅ selesai | 2026-11-01 | Audit docs/09, CSP, retensi, backup + restore, `run_daily`, uji beban |
 | 13 | Installer Windows | ⬜ belum | | |
 | 14 | Uji akhir & serah terima | ⬜ belum | | |
 
 Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catatan
 
 ## Hasil tes terakhir
+
+- **2026-11-01, fase 10+11+12** — pytest di MariaDB: **259 lulus, 0 gagal** (+50 tes). pyflakes bersih.
+  - Fase 10: judul kolom persis docs/07, NIK teks 16 digit, NIK tidak ikut tanpa izin (Admin `nik=1` diabaikan),
+    filter status, formula injection Excel/CSV, link promotor nonaktif/token diganti/arsip → 404, rate limit 30/jam,
+    tanda tangan link bukti, rekap keuangan (identitas masuk − refund = fee + harga tiket + tertahan − kekurangan).
+  - Fase 11: testimoni sekali & hanya saat SELESAI, MENUNGGU tidak tampil, gambar publik hilang saat disembunyikan,
+    robots/sitemap/Open Graph, `seed_demo` menolak prod, mencakup semua status, idempoten.
+  - Fase 12: CSP tanpa unsafe-*, template tanpa skrip/gaya inline, `check --deploy` tanpa ERROR, 50+ URL `/kelola/`
+    menolak anonim & non-staf, log tanpa NIK/rekening, purge (dry-run, retensi, status, bukti tersimpan), backup
+    (sandi tidak di argumen, gagal tanpa file sisa, rotasi), `run_daily` lanjut bila satu langkah gagal.
+- **Uji nyata**: `backup_db` → `scripts/restore.ps1` ke DB sementara: jumlah baris 5 tabel sama, NIK tetap terenkripsi.
+  `run_daily` membuat backup + `logs/daily.log`. `scripts/loadtest.py 50 30`: 50 kiriman lewat form dengan 5 thread
+  (setara ±1000/menit), kuota 30/30, 20 waiting list, 0 error.
+- **Uji browser** (Edge headless, CSP aktif, kini menangkap log pelanggaran): beranda, form pesanan, laci menu,
+  pratinjau upload `data:`, Mode War (HTMX + toast + undo), modal, rekap, Kotak Kabar, penyerahan, template.
+  Tidak ada pelanggaran CSP. Diperbaiki saat uji: rekap keuangan salah memisah fee/pelunasan bila bayar sekaligus,
+  kartu beranda memilih tahap yang sudah selesai, tabel rekap terlalu panjang di HP. Belum dicoba di browser:
+  halaman Django admin `/kelola/sistem/` di bawah CSP (butuh akun superuser). Excel belum dibuka di aplikasi Excel
+  sungguhan; isinya diverifikasi lewat openpyxl.
 
 - **2026-10-26, fase 07+08+09** — pytest di MariaDB: **209 lulus, 0 gagal** (+23 tes: mulai war & isi hasil
   via HTMX, undo, konflik versi admin lain, selesaikan war + tandai sisa gagal, filter, VA admin → lacak →
@@ -90,9 +109,54 @@ Legenda: ⬜ belum · 🟡 sedang · ✅ selesai · ⚠️ selesai dengan catata
 | XAMPP | MariaDB 10.4 (layanan `mysql`, port 3306) tetap ada, **tidak dipakai** (terlalu lama untuk Django 5.2) |
 | Git | repo di-init di `main` |
 
+## Audit keamanan (docs/09)
+
+| § | Kontrol | Lokasi kode | Tes | Status |
+|---|---|---|---|---|
+| 1 | NIK & rekening terenkripsi, rotasi kunci (MultiFernet) | `core/crypto.py` | `test_enkripsi` | ✅ |
+| 1 | Hash HMAC + pepper, 4 digit terakhir | `core/crypto.py`, `OrderLine` | `test_enkripsi` | ✅ |
+| 2 | Tampilan tersamar, "Lihat NIK" Owner + audit | `views_orders.reveal_nik` | `test_admin_pesanan`, `test_keamanan` | ✅ |
+| 2 | Ekspor NIK hanya Owner / izin promotor, tercatat | `views_reports`, `promotor_views` | `test_rekap_promotor` | ✅ |
+| 2 | NIK/rekening tidak di log, draf localStorage | `core/log_filters.py`, `app.js` DRAFT_SKIP | `test_fondasi`, `test_keamanan` | ✅ |
+| 3 | Retensi NIK, tgl lahir, rekening, file privat | `orders/services/retention.py` | `test_keamanan` | ✅ |
+| 4 | Validasi isi, buang EXIF, ≤2000px, ≤10 MB, nama UUID | `core/uploads.py` | `test_lacak` | ✅ |
+| 4 | HEIC ditolak dengan pesan jelas (tanpa dependensi baru) | `core/uploads.py` | `test_lacak` | ✅ |
+| 4 | File privat lewat view berizin, nosniff | `lacak_views.private_file` | `test_lacak` | ✅ |
+| 5 | Sandi min 10, login 5 gagal/15 menit, sesi 8 jam, idle 2 jam | `dashboard/views.py`, `middleware.py` | `test_dashboard` | ✅ |
+| 5 | Semua `/kelola/` berizin, Owner dibedakan | `permissions.py` | `test_keamanan` | ✅ (ditemukan & ditutup: `/kelola/pengaturan/`) |
+| 5 | `/kelola/sistem/` hanya superuser | `core/admin.py` | `test_keamanan` | ✅ |
+| 6 | Rate limit: lacak, pesanan, upload, login, promotor | `core/ratelimit.py` | `test_lacak`, `test_form_pesanan`, `test_dashboard`, `test_rekap_promotor` | ✅ |
+| 7 | nosniff, X-Frame DENY, Referrer same-origin | `settings/base.py` | `test_keamanan` | ✅ |
+| 7 | CSP `default-src 'self'` tanpa unsafe-* | `core/middleware.py` | `test_keamanan` + browser | ✅ |
+| 7 | Cookie secure, proxy SSL, HSTS bila `HTTPS=1` | `settings/prod.py` | `check --deploy` | ✅ (lihat pertanyaan 50) |
+| 8 | Honeypot, token sekali pakai, validasi WA & NIK | `public/order_views.py`, `forms.py` | `test_form_pesanan` | ✅ |
+| 9 | Backup gzip, rotasi, media robocopy, restore | `core/backup.py`, `scripts/restore.ps1` | `test_keamanan` + uji nyata | ✅ |
+
 ## Pertanyaan terbuka
 
 (hal ambigu yang diputuskan sementara dengan `# ASUMSI:` — pemilik perlu mengonfirmasi)
+
+**Fase 10–12**
+
+41. **Menonaktifkan link promotor hanya menutup halamannya.** Link bukti transfer di Excel tetap terbuka sampai link
+    diganti atau event diarsip (sesuai docs/07 §3, agar Excel yang diunduh admin tetap berguna). Tertulis di tab Promotor.
+42. Event yang **diarsip** menutup link promotor walau masih dicentang aktif.
+43. "Termasuk yang belum bayar" tetap tanpa waiting list & pesanan batal.
+44. **CSV**: bila dibuka di Excel, angka 16 digit bisa berubah jadi `3.17E+15`. Halaman promotor mengarahkan ke file
+    Excel untuk dilihat; CSV berisi nilai mentah untuk diolah sistem.
+45. **Rekap keuangan**: porsi fee = min(dibayar, tagihan awal), sisanya pelunasan, karena customer bisa bayar sekaligus.
+    Saldo tertahan = hak refund belum ditransfer + seluruh uang pesanan yang belum final. Pendapatan baru dihitung
+    saat pesanan final; bagian hangus pesanan batal termasuk pendapatan. Rekap keuangan hanya untuk Owner.
+46. **Testimoni**: centang izin publikasi wajib; testimoni dari admin (screenshot chat) langsung tampil; gambar publik
+    dihapus saat disembunyikan. Moderasi termasuk hapus boleh oleh Admin.
+47. **Beranda**: event yang semua tahapnya selesai tidak ditampilkan.
+48. **Purge** juga mengosongkan hash NIK dan menghapus e-tiket (keduanya data turunan pemegang). Rekening refund
+    dipertahankan selama refund belum selesai.
+49. `run_daily` menjalankan purge **sebelum** backup agar backup baru sudah bersih. Backup lama (maks. 14) masih
+    memuat data terenkripsi sampai terrotasi.
+50. `SECURE_PROXY_SSL_HEADER` & redirect HTTPS hanya aktif bila `HTTPS=1` **dan** `TRUSTED_PROXY=1` (header itu bisa
+    dipalsukan tanpa proxy; tanpa proxy redirect akan berputar). `/sehat/` dikecualikan dari redirect.
+51. Akun **demo-owner / demo-admin** dengan sandi tetap hanya dibuat `seed_demo`, yang menolak jalan selain dev.
 
 **Fase 07–09**
 
@@ -186,6 +250,20 @@ dev: pytest 9.1.1, pytest-django 4.14.0, freezegun 1.5.5.
 Vendor JS: htmx 2.0.11, `@alpinejs/csp` 3.17.4. Font: Fredoka & Nunito (variable, latin + latin-ext, OFL).
 
 ## Catatan untuk fase berikutnya
+
+**Dari fase 10–12 (penting untuk fase 13):**
+
+- **Installer wajib menjadwalkan**: `manage.py run_periodic` tiap 15 menit dan `manage.py run_daily` sekali sehari.
+  `run_daily` berakhir dengan kode gagal bila satu langkah gagal. Log di `logs/daily.log`.
+- `backup_db` mencari `mariadb-dump` di `MARIADB_BIN`, lalu `C:\Program Files\MariaDB *\bin`, lalu PATH.
+- `scripts/restore.ps1 <file.sql.gz> [-Target db] [-Yes]` memakai kredensial `.env`; database tujuan harus sudah ada.
+- **Ekspor**: `apps/exports/promotor_format.py` (satu-satunya definisi kolom), `promotor.py` (xlsx write-only, csv),
+  `recap.py` (angka tanpa data pribadi). `excel.clean_text` + paksa tipe teks mencegah isi customer menjadi rumus.
+- **Testimoni**: `apps/testimonials/services.py`. Gambar privat di `image`, publik di `public_image`.
+- **CSP** berlaku juga di dev. Jangan menambah skrip/gaya inline; `test_template_tanpa_skrip_dan_gaya_inline` menjaganya.
+- `scripts/tools/browser_flow.py` kini mencatat pelanggaran CSP. Tombol di `<details>` tertutup tidak bisa diklik
+  skenario meski `offsetParent` tidak null.
+- Data demo: `dev.bat seed` atau `manage.py seed_demo --reset`.
 
 **Dari fase 07–09:**
 

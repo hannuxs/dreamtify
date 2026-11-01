@@ -33,9 +33,12 @@ class Browser:
                 self.errors.append("EXC " + (d.get("exception", {}).get("description") or d.get("text", ""))[:300])
             elif msg.get("method") == "Runtime.consoleAPICalled" and msg["params"]["type"] in ("error", "warning"):
                 self.errors.append("CONSOLE " + " ".join(str(a.get("value", a.get("description", ""))) for a in msg["params"]["args"])[:300])
+            elif msg.get("method") == "Log.entryAdded" and msg["params"]["entry"]["level"] == "error":
+                self.errors.append("LOG " + msg["params"]["entry"]["text"][:300])
             return raw
 
         self.ws._recv_msg = recv
+        self.ws.send("Log.enable")
         self.ws.send("Runtime.enable")
         self.ws.send("Page.enable")
         self.size(width, height)

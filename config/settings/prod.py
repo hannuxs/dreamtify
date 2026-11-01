@@ -24,3 +24,5 @@ if HTTPS:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     if TRUSTED_PROXY:
         SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+        SECURE_SSL_REDIRECT = True
+        SECURE_REDIRECT_EXEMPT = [r"^sehat/$"]  # health check lokal lewat HTTP
